@@ -318,14 +318,17 @@ private struct NumericSettingRow: View {
                     Text(name).frame(minWidth: 110, maxWidth: .infinity, alignment: .leading)
                     VStack(spacing: 0) {
                         // 2026-09-11: Exactly five native stops provide readable ticks without the old dense numeric-step rendering.
+                        // 2026-09-11: Grouped Form reserves an implicit label column unless labels are hidden.
+                        // Give the track and captions the same explicit width to prevent the left caption drifting.
                         Slider(value: presetBinding, in: 0...Double(presets.count-1), step: 1)
+                            .labelsHidden().frame(width: 306)
                             .accessibilityLabel(name)
                         HStack {
                             Text(lowLabel)
                             Spacer()
                             if name == "音量灵敏度" { Text("中"); Spacer() }
                             Text(highLabel)
-                        }.font(.caption).foregroundStyle(.secondary)
+                        }.font(.caption).foregroundStyle(.secondary).frame(width: 306)
                     }.frame(width: 306)
                     .help("拖动选择预设；未拖动时保留当前数值。高级设置可精确调整。")
                 }
