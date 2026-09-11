@@ -121,10 +121,10 @@ struct SettingsView: View {
             }
             Text(store.value.isVertical ? "从上到下分别为左、右声道，各 \(store.value.barCount / 2) 柱。" : "从左到右分别为左、右声道，各 \(store.value.barCount / 2) 柱。")
                 .font(.caption).foregroundStyle(.secondary)
-            NumericSettingRow(name: "声道额外间隔", value: $store.value.channelGap, range: 0...40, unit: "pt", step: 0.1, presets: [0, 4, 10, 20, 40], advanced: store.value.advancedSettings)
+            NumericSettingRow(name: "声道额外间隔", value: $store.value.channelGap, range: 0...40, unit: "pt", step: 0.1, presets: [0, 4, 10, 20, 40], advanced: store.value.advancedSettings, lowLabel: "紧", highLabel: "宽")
         }
-        NumericSettingRow(name: "最低频率", value: $store.value.frequencyMin, range: 20...(store.value.frequencyMax-1), unit: "Hz", step: 1, presets: [20, 50, 100, 200, 500], advanced: store.value.advancedSettings)
-        NumericSettingRow(name: "最高频率", value: $store.value.frequencyMax, range: (store.value.frequencyMin+1)...20000, unit: "Hz", step: 1, presets: [4000, 8000, 12000, 16000, 20000], advanced: store.value.advancedSettings)
+        NumericSettingRow(name: "最低频率", value: $store.value.frequencyMin, range: 20...(store.value.frequencyMax-1), unit: "Hz", step: 1, presets: [20, 50, 100, 200, 500], advanced: store.value.advancedSettings, lowLabel: "低", highLabel: "高")
+        NumericSettingRow(name: "最高频率", value: $store.value.frequencyMax, range: (store.value.frequencyMin+1)...20000, unit: "Hz", step: 1, presets: [4000, 8000, 12000, 16000, 20000], advanced: store.value.advancedSettings, lowLabel: "低", highLabel: "高")
         Text("默认 20–20,000 Hz；仅调整频谱显示范围，不改变播放声音。实际最高频率受采样率限制，窄低频柱共享 FFT 分辨率。")
             .font(.caption).foregroundStyle(.secondary)
     }
@@ -156,8 +156,8 @@ struct SettingsView: View {
         }
         Text("实际帧率受屏幕和系统调度影响；静音淡出后暂停绘制。")
             .font(.caption).foregroundStyle(.secondary)
-        NumericSettingRow(name: "灵敏度", value: $store.value.sensitivityDB, range: -24...24, unit: "dB", step: 0.1, presets: [-24, -12, 0, 12, 24], advanced: store.value.advancedSettings)
-        NumericSettingRow(name: "回落时间", value: $store.value.releaseMs, range: 80...500, unit: "ms", step: 1, presets: [80, 150, 250, 350, 500], advanced: store.value.advancedSettings)
+        NumericSettingRow(name: "音量灵敏度", value: $store.value.sensitivityDB, range: -24...24, unit: "dB", step: 0.1, presets: [-24, -12, 0, 12, 24], advanced: store.value.advancedSettings, lowLabel: "弱", highLabel: "强")
+        NumericSettingRow(name: "回落时间", value: $store.value.releaseMs, range: 80...500, unit: "ms", step: 1, presets: [500, 350, 250, 150, 80], advanced: store.value.advancedSettings, lowLabel: "慢", highLabel: "快")
     }
     }
 
@@ -179,12 +179,12 @@ struct SettingsView: View {
         } else {
             ColorPicker("主色 / LED", selection: colorBinding(0), supportsOpacity: false)
         }
-        NumericSettingRow(name: "柱间距", value: $store.value.gap, range: 0...8, unit: "pt", step: 0.1, presets: [0, 1, 2, 4, 8], advanced: store.value.advancedSettings)
-        NumericSettingRow(name: "柱顶圆角", value: $store.value.cornerRadius, range: 0...8, unit: "pt", step: 0.1, presets: [0, 1, 2, 4, 8], advanced: store.value.advancedSettings)
+        NumericSettingRow(name: "柱间距", value: $store.value.gap, range: 0...8, unit: "pt", step: 0.1, presets: [0, 1, 2, 4, 8], advanced: store.value.advancedSettings, lowLabel: "紧", highLabel: "宽")
+        NumericSettingRow(name: "柱顶圆角", value: $store.value.cornerRadius, range: 0...8, unit: "pt", step: 0.1, presets: [0, 1, 2, 4, 8], advanced: store.value.advancedSettings, lowLabel: "直", highLabel: "圆")
         Toggle("基部也应用圆角", isOn: $store.value.roundBase)
         Text("基部指贴边的一端；关闭时仅柱顶圆角。零柱间距连接相邻柱身，圆角处仍保留弧线。")
             .font(.caption).foregroundStyle(.secondary)
-        NumericSettingRow(name: "柱条透明度", value: percentBinding(\Settings.barOpacity), range: 10...100, unit: "%", step: 1, presets: [10, 30, 50, 75, 100], advanced: store.value.advancedSettings)
+        NumericSettingRow(name: "柱条透明度", value: percentBinding(\Settings.barOpacity), range: 10...100, unit: "%", step: 1, presets: [10, 30, 50, 75, 100], advanced: store.value.advancedSettings, lowLabel: "淡", highLabel: "浓")
     }
     Section("峰值标记") {
         Toggle("峰值标记", isOn: $store.value.peakEnabled)
@@ -193,9 +193,9 @@ struct SettingsView: View {
                 Text("细横线").tag("line"); Text("小砖块").tag("brick"); Text("圆角砖块").tag("rounded")
             }
             if store.value.peakStyle != "line" {
-                NumericSettingRow(name: "标记厚度", value: $store.value.peakThickness, range: 1...12, unit: "pt", step: 0.5, presets: [1, 2, 3, 6, 12], advanced: store.value.advancedSettings)
+                NumericSettingRow(name: "标记厚度", value: $store.value.peakThickness, range: 1...12, unit: "pt", step: 0.5, presets: [1, 2, 3, 6, 12], advanced: store.value.advancedSettings, lowLabel: "细", highLabel: "粗")
             }
-            NumericSettingRow(name: "下落速度", value: $store.value.peakFallSpeed, range: 1...200, unit: "%/s", step: 1, presets: [5, 10, 20, 30, 40], advanced: store.value.advancedSettings)
+            NumericSettingRow(name: "下落速度", value: $store.value.peakFallSpeed, range: 1...200, unit: "%/s", step: 1, presets: [5, 10, 20, 30, 40], advanced: store.value.advancedSettings, lowLabel: "慢", highLabel: "快")
             Toggle("自定义标记颜色", isOn: $store.value.peakCustomColor)
             if store.value.peakCustomColor { ColorPicker("标记颜色", selection: peakColorBinding, supportsOpacity: false) }
             Text("柱顶推高标记，随后缓慢落回柱顶；速度为每秒下降高度百分比，细横线固定 1 pt。")
@@ -224,7 +224,7 @@ struct SettingsView: View {
         }
         Text("铺满使用屏幕可用区域；编辑模式提供四边停靠、居中、铺满和锁定图标。侧边频率轴从上到下，柱条向屏幕内生长。")
             .font(.caption).foregroundStyle(.secondary)
-        NumericSettingRow(name: "边缘间距", value: $store.value.edgeInset, range: 0...120, unit: "pt", step: 1, presets: [0, 8, 24, 60, 120], advanced: store.value.advancedSettings)
+        NumericSettingRow(name: "边缘间距", value: $store.value.edgeInset, range: 0...120, unit: "pt", step: 1, presets: [0, 8, 24, 60, 120], advanced: store.value.advancedSettings, lowLabel: "近", highLabel: "远")
     }
     }
 
@@ -288,6 +288,8 @@ private struct NumericSettingRow: View {
     let step: Double
     var presets: [Double] = []
     var advanced = true
+    var lowLabel = "小"
+    var highLabel = "大"
     @StateObject private var input = NumericDraft()
     @FocusState private var focused: Bool
 
@@ -314,16 +316,19 @@ private struct NumericSettingRow: View {
             } else {
                 HStack {
                     Text(name).frame(minWidth: 110, maxWidth: .infinity, alignment: .leading)
-                    ForEach(Array(presets.enumerated()), id: \.offset) { index, preset in
-                        Button("\(index + 1)") { value = preset }
-                            .buttonStyle(.bordered)
-                            .tint(abs(value-preset) < 0.0001 ? Color.accentColor : Color.secondary)
-                            .disabled(!range.contains(preset))
-                            .accessibilityLabel("\(name) 第\(index+1)档")
-                    }
+                    VStack(spacing: 0) {
+                        // 2026-09-11: Exactly five native stops provide readable ticks without the old dense numeric-step rendering.
+                        Slider(value: presetBinding, in: 0...Double(presets.count-1), step: 1)
+                            .accessibilityLabel(name)
+                        HStack {
+                            Text(lowLabel)
+                            Spacer()
+                            if name == "音量灵敏度" { Text("中"); Spacer() }
+                            Text(highLabel)
+                        }.font(.caption).foregroundStyle(.secondary)
+                    }.frame(width: 306)
+                    .help("拖动选择预设；未拖动时保留当前数值。高级设置可精确调整。")
                 }
-                Text(presets.contains(where: { abs($0-value)<0.0001 }) ? "1 → 5：由小到大" : "当前自定义值已保留；选择档位后替换。")
-                    .font(.caption).foregroundStyle(.secondary)
             }
             if input.invalid { Text("请输入 \(range.lowerBound.formatted())–\(range.upperBound.formatted()) 范围内的数字")
                 .font(.caption).foregroundStyle(.red) }
@@ -331,6 +336,18 @@ private struct NumericSettingRow: View {
         .onAppear { sync(); input.custom = !presets.contains(where: { abs($0-value)<0.0001 }) }
         .onChange(of: value) { _, _ in sync() }
         .onChange(of: focused) { _, active in if !active { commit() } }
+    }
+
+    /// 2026-09-11: Reading a nearby stop never mutates a custom value; only user movement selects a valid preset.
+    private var presetBinding: Binding<Double> {
+        Binding(get: {
+            Double(presets.indices.min(by: { abs(presets[$0]-value) < abs(presets[$1]-value) }) ?? 0)
+        }, set: { proposed in
+            let requested = Int(proposed.rounded())
+            let valid = presets.indices.filter { range.contains(presets[$0]) }
+            guard let index = valid.min(by: { abs($0-requested) < abs($1-requested) }) else { return }
+            value = presets[index]
+        })
     }
 
     /// 2026-09-11: Quantize values ourselves so SwiftUI does not create thousands of automatic tick marks.
