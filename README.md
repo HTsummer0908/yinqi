@@ -135,3 +135,7 @@ ICON_DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer" ./scripts/build.
 ### 紧凑设置布局（0.3.17）
 
 统一控件内容最小高度从 44 pt 收紧为 28 pt，避免与 grouped 表单自身留白叠加造成行距过大；保留 info 提示和滑块刻度，内容超出时自然撑开。
+
+### info 提示（0.3.18）
+
+所有 info 图标统一悬停 800 ms 后显示说明，移开取消等待或关闭提示。

@@ -133,9 +133,7 @@ struct SettingsView: View {
                 HStack {
                     SettingLabel(title: "目标帧率")
                     if !Settings.frameRatePresets.contains(store.value.frameRate) {
-                        Image(systemName: "info.circle").foregroundStyle(.secondary)
-                            .help("当前自定义帧率已保留；选择预设后替换。")
-                            .accessibilityLabel("当前自定义帧率已保留；选择预设后替换。")
+                        SettingInfo(text: "当前自定义帧率已保留；选择预设后替换。")
                     }
                     Spacer()
                     ForEach(Settings.frameRatePresets, id: \.self) { rate in
@@ -206,7 +204,7 @@ struct SettingsView: View {
         HStack {
             Button("居中") { quickLayout("center") }
             Button("沿当前边铺满") { quickLayout("fill") }
-            Image(systemName: "info.circle").foregroundStyle(.secondary).help("铺满使用屏幕可用区域；编辑模式可调整停靠位置、居中和锁定。")
+            SettingInfo(text: "铺满使用屏幕可用区域；编辑模式可调整停靠位置、居中和锁定。")
             Button("调整 / 锁定悬浮窗", action: editSpectrum)
         }.frame(minHeight: settingControlHeight)
         NumericSettingRow(name: "边缘间距", value: $store.value.edgeInset, range: 0...120, unit: "pt", step: 1, presets: [0, 8, 24, 60, 120], advanced: store.value.advancedSettings, lowLabel: "近", highLabel: "远")
@@ -409,8 +407,7 @@ private struct SettingLabel: View {
         HStack(spacing: 5) {
             Text(title)
             if let hint {
-                Image(systemName: "info.circle").font(.caption).foregroundStyle(.secondary)
-                    .help(hint).accessibilityLabel(title + "说明：" + hint)
+                SettingInfo(text: hint).accessibilityLabel(title + "说明：" + hint)
             }
         }
     }
@@ -429,3 +426,38 @@ private struct SettingToggle: View {
 
 /// 2026-09-11: Use 28 pt for control content, not the whole row; 44 pt plus Form insets made settings too sparse.
 private let settingControlHeight: CGFloat = 28
+
+/// 2026-09-11: Replace system-delayed info help with a cancellable 800 ms hover presentation.
+private struct SettingInfo: View {
+    let text: String
+    @StateObject private var hover = InfoHoverState()
+
+    var body: some View {
+        Image(systemName: "info.circle")
+            .font(.caption).foregroundStyle(.secondary)
+            .contentShape(Rectangle())
+            .accessibilityLabel(text)
+            .onHover { inside in
+                hover.hovering = inside
+                if !inside { hover.presented = false }
+            }
+            .task(id: hover.hovering) {
+                // 2026-09-11: SwiftUI cancels this task on hover exit or view removal; no timer runs while idle.
+                guard hover.hovering else { return }
+                do { try await Task.sleep(for: .milliseconds(800)) }
+                catch { return }
+                guard !Task.isCancelled, hover.hovering else { return }
+                hover.presented = true
+            }
+            .popover(isPresented: $hover.presented, arrowEdge: .bottom) {
+                Text(text).font(.callout).padding(12).frame(maxWidth: 280)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+    }
+}
+
+/// 2026-09-11: Keep hover state compatible with the project's command-line SwiftUI toolchain.
+private final class InfoHoverState: ObservableObject {
+    @Published var hovering = false
+    @Published var presented = false
+}
