@@ -2,8 +2,43 @@ import Foundation
 import CoreGraphics
 /// Configuration inputs are untrusted local data and must not hide the control window permanently.
 @main struct SettingsTests {
+    /// 2026-09-11: Verify portable round trips, runtime preservation, atomic rejection and failed persistence.
+    static func portableConfiguration() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = SettingsStore(url: directory.appendingPathComponent("source.json"))
+        source.value.peakFallSpeed = 14; source.value.frequencyMax = 12000
+        source.value.screenHint = "other-display"; source.value.spectrumEnabled = false
+        let data = try source.exportData()
+        let envelope = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let fields = envelope["settings"] as! [String: Any]
+        assert(fields["screenHint"] == nil && fields["spectrumEnabled"] == nil && fields["hasLaunched"] == nil)
+        let destinationURL = directory.appendingPathComponent("destination.json")
+        let destination = SettingsStore(url: destinationURL)
+        destination.value.hasLaunched = true; destination.value.spectrumEnabled = true
+        try destination.importData(data)
+        assert(destination.value.peakFallSpeed == 14 && destination.value.frequencyMax == 12000)
+        assert(destination.value.hasLaunched && destination.value.spectrumEnabled && destination.value.screenHint.isEmpty)
+        assert(SettingsStore(url: destinationURL).value == destination.value)
+        let before = destination.value
+        let diskBefore = try Data(contentsOf: destinationURL)
+        for invalid in [Data("{}".utf8), Data("broken".utf8), Data("{\"format\":\"yinqi-settings\",\"version\":2,\"settings\":{\"gap\":2}}".utf8)] {
+            do { try destination.importData(invalid); assertionFailure("invalid import accepted") } catch {}
+            assert(destination.value == before)
+            let diskAfter = try Data(contentsOf: destinationURL)
+            assert(diskAfter == diskBefore)
+        }
+        let blocked = SettingsStore(url: destinationURL.appendingPathComponent("child.json"))
+        let blockedBefore = blocked.value
+        do { try blocked.importData(data); assertionFailure("write should fail") } catch {}
+        assert(blocked.value == blockedBefore)
+        print("PASS: portable configuration round trip, runtime preservation, invalid import and write failure rollback")
+    }
+
     /// Exercise missing fields, unknown keys, corruption, bounds, and a negative-coordinate screen.
     static func main() throws {
+        try portableConfiguration()
+
         // 2026-09-11: Advanced UI mode must persist without quantizing existing custom values.
         var detailed = Settings(); detailed.advancedSettings = true; detailed.peakFallSpeed = 14; detailed.releaseMs = 289
         let detailedReload = try Settings.decode(JSONEncoder().encode(detailed))

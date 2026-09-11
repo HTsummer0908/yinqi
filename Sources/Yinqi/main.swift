@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Three independent state axes prevent editing, hiding, and silence from overriding one another.
 enum PresentationMode { case hidden, locked, editing }
@@ -180,7 +181,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func quickLayout(_ action: String) {
         if action == "lock" { if mode == .editing { toggleEditing() }; return }
         var s = store.value
-        if ["top","bottom","left","right"].contains(action) { s = s.placing(at: action) }
+        // 2026-09-11: General-page presets combine docking and fill instead of preserving a custom length.
+        if action.hasPrefix("fill-"), ["top", "bottom", "left", "right"].contains(String(action.dropFirst(5))) {
+            s = s.placing(at: String(action.dropFirst(5))); s.layoutMode = "fill"
+        }
+        else if ["top","bottom","left","right"].contains(action) { s = s.placing(at: action) }
         else if action == "fill" {
             if s.placementMode == "free" { s = s.placing(at: s.isVertical ? "left" : "bottom") }
             s.layoutMode = "fill"
@@ -214,9 +219,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             window.title="Yinqi 设置"; window.isReleasedWhenClosed=false
             // 2026-09-11: A compact default with a minimum size keeps numeric columns readable during resize.
             window.contentMinSize = NSSize(width:681,height:400)
-            window.contentView=NSHostingView(rootView:SettingsView(store:store, showDiagnostics: { [weak self] in self?.showDiagnostics() }, enableSpectrum: { [weak self] in self?.enable() }, hideSpectrum: { [weak self] in self?.hide() }, editSpectrum: { [weak self] in self?.toggleEditing() }, quickLayout: { [weak self] action in self?.quickLayout(action) })); settingsWindow=window
+            window.contentView=NSHostingView(rootView:SettingsView(store:store, showDiagnostics: { [weak self] in self?.showDiagnostics() }, enableSpectrum: { [weak self] in self?.enable() }, hideSpectrum: { [weak self] in self?.hide() }, editSpectrum: { [weak self] in self?.toggleEditing() }, importSettings: { [weak self] in self?.importSettings() }, exportSettings: { [weak self] in self?.exportSettings() }, quickLayout: { [weak self] action in self?.quickLayout(action) })); settingsWindow=window
         }
         NSApp.activate(ignoringOtherApps:true); settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    /// 2026-09-11: Use a native JSON save sheet; exporting does not modify current settings.
+    private func exportSettings() {
+        guard let window = settingsWindow else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]; panel.nameFieldStringValue = "Yinqi-settings.json"
+        panel.beginSheetModal(for: window) { [weak self] result in
+            guard let self, result == .OK, let url = panel.url else { return }
+            do {
+                try self.store.exportData().write(to: url, options: .atomic)
+                self.store.transferMessage = "设置已导出。"
+            } catch { self.store.transferMessage = "导出失败：" + error.localizedDescription }
+        }
+    }
+
+    /// 2026-09-11: Native import sheet reads only the chosen file and delegates transactional validation to the store.
+    private func importSettings() {
+        guard let window = settingsWindow else { return }
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]; panel.allowsMultipleSelection = false; panel.canChooseDirectories = false
+        panel.beginSheetModal(for: window) { [weak self] result in
+            guard let self, result == .OK, let url = panel.url else { return }
+            do {
+                let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                guard size <= 1_048_576 else { throw CocoaError(.fileReadTooLarge) }
+                try self.store.importData(Data(contentsOf: url))
+                self.store.transferMessage = "设置已导入并应用。"
+            } catch { self.store.transferMessage = "导入失败，原设置已保留：" + error.localizedDescription }
+        }
     }
 
     /// This explicitly requested diagnostics window may acquire keyboard focus.
