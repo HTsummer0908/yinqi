@@ -1,0 +1,47 @@
+{
+  "fill": {
+    "automatic-gradient": "extended-srgb:0.07059,0.11373,0.18039,1.00000"
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "image-name": "spectrum.svg",
+          "name": "spectrum"
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.2
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.1
+      },
+      "name": "spectrum"
+    },
+    {
+      "layers": [
+        {
+          "image-name": "perch.svg",
+          "name": "perch"
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.2
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.1
+      },
+      "name": "perch"
+    }
+  ],
+  "supported-platforms": {
+    "circles": [
+      "watchOS"
+    ],
+    "squares": "shared"
+  }
+}
