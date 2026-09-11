@@ -5,8 +5,8 @@
 <key>CFBundleName</key><string>Yinqi</string>
 <key>CFBundleExecutable</key><string>Yinqi</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.3.22</string>
-<key>CFBundleVersion</key><string>25</string>
+<key>CFBundleShortVersionString</key><string>1.0.0</string>
+<key>CFBundleVersion</key><string>26</string>
 <key>LSMinimumSystemVersion</key><string>26.0</string>
 <key>LSUIElement</key><true/>
 <key>NSAudioCaptureUsageDescription</key><string>仅在本机分析系统播放音频以显示频谱，不保存或上传声音。</string>

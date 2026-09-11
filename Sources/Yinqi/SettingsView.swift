@@ -66,8 +66,8 @@ struct SettingsView: View {
             }
             LabeledContent("开发者", value: "HTsummer0908")
             Link("开发者 GitHub", destination: URL(string: "https://github.com/HTsummer0908")!)
-            Text("项目名称：yinqi · GitHub 仓库准备中")
-                .foregroundStyle(.secondary)
+            // 2026-09-11: Point to the release repository; private access follows GitHub account permissions.
+            Link("项目 GitHub", destination: URL(string: "https://github.com/HTsummer0908/yinqi")!)
         }
         Section("设置模式") {
             SettingToggle("高级设置", isOn: $store.value.advancedSettings)
