@@ -84,6 +84,8 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
     func draw(in view: MTKView) {
         // 2026-09-11: Read targets on the draw clock instead of repeating a separate UI timer snapshot.
         if !hidden, let latest = frameProvider?() { frame = compatibleFrame(latest, settings: settings) }
+        // 2026-09-11: Drop the previous array alias before mutating animation storage to avoid copy-on-write each frame.
+        animatedBands = nil
         if let target = frame.targetBands {
             animatedBands = animation.advance(target: target, time: ProcessInfo.processInfo.systemUptime, release: settings.releaseMs / 1000)
         } else { animatedBands = nil }
@@ -222,8 +224,11 @@ struct SpectrumAnimation {
         if bands.count != target.count { bands = [Float](repeating: 0, count: target.count); lastTime = nil }
         let dt = lastTime.map { max(0, time - $0) } ?? 0
         lastTime = time
+        // 2026-09-11: Only two time constants are used; compute their exponentials once per frame, not per bar.
+        let attack = Float(1-exp(-max(0,dt)/0.03))
+        let decay = Float(1-exp(-max(0,dt)/max(0.001,release)))
         for i in target.indices {
-            bands[i] = smooth(bands[i], target: target[i], dt: dt, tau: target[i] > bands[i] ? 0.03 : release)
+            bands[i] += (target[i]-bands[i]) * (target[i] > bands[i] ? attack : decay)
         }
         return bands
     }

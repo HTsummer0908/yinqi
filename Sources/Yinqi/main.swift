@@ -6,13 +6,15 @@ import UniformTypeIdentifiers
 enum PresentationMode { case hidden, locked, editing }
 
 /// Coordinates UI lifecycle on AppKit's main thread; capture and FFT remain on their serial worker.
-final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDelegate {
     private var item: NSStatusItem!
     private let capture = AudioCaptureService()
     private let store = SettingsStore()
     private var overlay: OverlayWindowController?
     private var diagnostics: NSWindow!
     private var settingsWindow: NSWindow?
+    /// 2026-09-11: Validate on configuration changes instead of rebuilding settings at every wake poll.
+    private var renderSettings = Settings()
     private var text: NSTextView!
     private var statusItem: NSMenuItem!
     private var editItem: NSMenuItem!
@@ -79,10 +81,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             overlay?.onQuickAction = { [weak self] action in self?.quickLayout(action) }
             overlay?.onFrameChanged = { [weak self] frame,snap in self?.saveFrame(frame,snap:snap) }
         } catch { lastStatus = CaptureStatus(message:"Metal 初始化失败：\(error.localizedDescription)", isError: true) }
+        renderSettings = store.value.validated()
         capture.configure(store.value)
         capture.onStatus = { [weak self] status in self?.lastStatus = status; self?.updateDiagnostics() }
         store.onChange = { [weak self] value in
             guard let self else { return }
+            self.renderSettings = value
             self.applyActivationPolicy(value)
             self.capture.configure(value); self.overlay?.apply(value); self.refreshRenderer()
         }
@@ -100,6 +104,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         diagnostics = NSWindow(contentRect:NSRect(x:200,y:220,width:700,height:360),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
         diagnostics.title = "Yinqi — 运行诊断"
         diagnostics.isReleasedWhenClosed = false
+        diagnostics.delegate = self
         let content = NSView(frame:diagnostics.contentView!.bounds)
         text = NSTextView(frame:NSRect(x:0,y:48,width:700,height:312))
         text.autoresizingMask = [.width,.height]; text.isEditable = false
@@ -216,6 +221,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func showSettings() {
         if settingsWindow == nil {
             let window=NSWindow(contentRect:NSRect(x:260,y:160,width:681,height:560),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
+            window.delegate = self
             window.title="Yinqi 设置"; window.isReleasedWhenClosed=false
             // 2026-09-11: A compact default with a minimum size keeps numeric columns readable during resize.
             window.contentMinSize = NSSize(width:681,height:400)
@@ -252,6 +258,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self.store.transferMessage = "设置已导入并应用。"
             } catch { self.store.transferMessage = "导入失败，原设置已保留：" + error.localizedDescription }
         }
+    }
+
+    /// 2026-09-11: Release closed utility view trees so their SwiftUI/AppKit resources need not remain resident.
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        if window === settingsWindow { store.saveNow(); settingsWindow = nil }
+        if window === diagnostics { text = nil; diagnostics = nil }
     }
 
     /// This explicitly requested diagnostics window may acquire keyboard focus.
@@ -303,7 +316,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard let overlay else { return }
         let frame=capture.frames.snapshot()
         let hidden=mode == .hidden || !suspended.isEmpty
-        overlay.renderer.update(frame,settings:store.value.validated(),editing:mode == .editing,hidden:hidden)
+        overlay.renderer.update(frame,settings:renderSettings,editing:mode == .editing,hidden:hidden)
         let paused=frame.opacity <= 0 || hidden
         if paused != lastPaused {
             lastPaused=paused

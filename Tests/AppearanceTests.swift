@@ -6,6 +6,20 @@ import MetalKit
     /// Render controlled bar heights and inspect coverage/color rather than relying on submission counts.
     static func main() throws {
         _ = NSApplication.shared
+        // 2026-09-11: Cached coefficients must preserve attack/release values across rates and changing targets.
+        for fps in [10, 30, 60, 120, 240] {
+            var animation = SpectrumAnimation()
+            var reference: [Float] = [0, 0]
+            _ = animation.advance(target: reference, time: 0, release: 0.289)
+            for tick in 1...fps {
+                let target: [Float] = tick < fps/2 ? [1, 0.4] : [0.2, 0.9]
+                for i in target.indices {
+                    reference[i] = smooth(reference[i], target: target[i], dt: 1/Double(fps), tau: target[i] > reference[i] ? 0.03 : 0.289)
+                }
+                let actual = animation.advance(target: target, time: Double(tick)/Double(fps), release: 0.289)
+                assert(zip(actual, reference).allSatisfy { abs($0-$1) < 0.00001 })
+            }
+        }
         // 2026-09-11: Equal elapsed time must produce equal peak decay, independent of refresh rate.
         for fps in [10,30,60,144,240] {
             var peak = PeakAnimation()

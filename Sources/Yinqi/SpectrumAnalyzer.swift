@@ -70,6 +70,10 @@ final class SpectrumAnalyzer {
     private var signalOpacity = 1.0
     private var gate = SilenceGate()
     private var windowSum: Float = 0
+    /// 2026-09-11: Cache bin geometry independently of gain and time; preserve original weighted aggregation arithmetic.
+    private var mappingKey: [Double] = []
+    private var mapping: [[(Int, Double)]] = []
+    private var mappingDivisors: [Double] = []
 
     /// Allocate FFT and scratch storage on the control/DSP queue, outside the IO callback.
     init(sampleRate: Double) {
@@ -179,23 +183,34 @@ final class SpectrumAnalyzer {
         let upper = min(settings.frequencyMax, sampleRate/2)
         // A device whose Nyquist frequency does not exceed the configured floor has no analyzable bins.
         guard range.count > 0, binHz.isFinite, binHz > 0, lower.isFinite, upper.isFinite, lower > 0, upper > lower else { return }
-        for band in range {
-            let localBand = band - range.lowerBound
-            let low = lower*pow(upper/lower,Double(localBand)/Double(range.count))
-            let high = lower*pow(upper/lower,Double(localBand+1)/Double(range.count))
-            var power = 0.0, weight = 0.0
-            if high-low < binHz {
-                // Adjacent narrow low-frequency bars interpolate shared bins; they are not independent resolution.
-                let center = sqrt(low*high)/binHz
-                let i = min(n/2-1,max(1,Int(center))), fraction = max(0,min(1,center-Double(i)))
-                power = Double(source[i])*(1-fraction)+Double(source[i+1])*fraction
-            } else {
-                for i in max(1,Int(low/binHz-0.5))...min(n/2,Int(high/binHz+0.5)) {
-                    let overlap = max(0,min(high,(Double(i)+0.5)*binHz)-max(low,(Double(i)-0.5)*binHz))
-                    power += Double(source[i])*overlap; weight += overlap
+        let key = [lower, upper, Double(range.count)]
+        if mappingKey != key {
+            mappingKey = key; mapping.removeAll(keepingCapacity: true); mappingDivisors.removeAll(keepingCapacity: true)
+            for localBand in 0..<range.count {
+                let low = lower*pow(upper/lower,Double(localBand)/Double(range.count))
+                let high = lower*pow(upper/lower,Double(localBand+1)/Double(range.count))
+                var entries: [(Int, Double)] = []
+                var divisor = 1.0
+                if high-low < binHz {
+                    let center = sqrt(low*high)/binHz
+                    let i = min(n/2-1,max(1,Int(center))), fraction = max(0,min(1,center-Double(i)))
+                    entries = [(i, 1-fraction), (i+1, fraction)]
+                } else {
+                    var weight = 0.0
+                    for i in max(1,Int(low/binHz-0.5))...min(n/2,Int(high/binHz+0.5)) {
+                        let overlap = max(0,min(high,(Double(i)+0.5)*binHz)-max(low,(Double(i)-0.5)*binHz))
+                        entries.append((i, overlap)); weight += overlap
+                    }
+                    divisor = max(weight,1e-12)
                 }
-                power /= max(weight,1e-12)
+                mapping.append(entries); mappingDivisors.append(divisor)
             }
+        }
+        for band in range {
+            let index = band-range.lowerBound
+            var power = 0.0
+            for (bin, weight) in mapping[index] { power += Double(source[bin])*weight }
+            power /= mappingDivisors[index]
             let dbBand = 10*log10(max(power * scale,1e-16))+settings.sensitivityDB
             bands[band] = Float(min(1,max(0,(dbBand+72)/72)))
         }
