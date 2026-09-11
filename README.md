@@ -151,3 +151,7 @@ ICON_DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer" ./scripts/build.
 ### 快速布局与配置分享（0.3.21）
 
 常规页提供顶部、底部、左侧、右侧铺满四个按钮；位置页移除原快速布局行。关于页使用“导出设置”生成 Yinqi-settings.json，在另一台电脑通过“导入设置”立即应用。文件包含版本标识及可移植设置，不包含屏幕标识、启动记录或频谱启停状态；导入保留本机启动记录和启停状态。导入失败保留原配置，边界值沿用现有校验，屏幕位置按目标电脑可用区域恢复。不兼容的文件版本会拒绝导入。
+
+### 截图隐藏（0.3.22）
+
+常规页新增“屏幕截图时隐藏”，默认关闭。开启后将频谱窗和编辑工具栏的 NSWindow.sharingType 设为 .none，关闭恢复 .readOnly；桌面显示和采集不变。设置支持保存与配置导入导出。参考 LyricsX KaraokeLyricsController.swift 的窗口共享策略；录屏不在本次支持验证范围。

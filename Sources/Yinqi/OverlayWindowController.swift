@@ -54,6 +54,10 @@ final class OverlayWindowController {
     /// Choose a connected saved display, otherwise the existing panel display or main screen.
     func apply(_ value: Settings) {
         settings = value.validated()
+        // 2026-09-11: Match LyricsX's public AppKit policy; keep desktop visibility and exclude both overlay windows.
+        let sharing: NSWindow.SharingType = settings.hideInScreenshots ? .none : .readOnly
+        panel.sharingType = sharing
+        toolbar.panel.sharingType = sharing
         let saved = NSScreen.screens.first { String(describing:$0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] ?? "") == settings.screenHint }
         guard let screen = saved ?? panel.screen ?? NSScreen.main ?? NSScreen.screens.first else { return }
         panel.setFrame(restoredFrame(settings,safe:screen.visibleFrame),display:true)

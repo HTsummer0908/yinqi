@@ -7,6 +7,7 @@ import CoreGraphics
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let source = SettingsStore(url: directory.appendingPathComponent("source.json"))
+        source.value.hideInScreenshots = true
         source.value.peakFallSpeed = 14; source.value.frequencyMax = 12000
         source.value.screenHint = "other-display"; source.value.spectrumEnabled = false
         let data = try source.exportData()
@@ -17,6 +18,7 @@ import CoreGraphics
         let destination = SettingsStore(url: destinationURL)
         destination.value.hasLaunched = true; destination.value.spectrumEnabled = true
         try destination.importData(data)
+        assert(destination.value.hideInScreenshots)
         assert(destination.value.peakFallSpeed == 14 && destination.value.frequencyMax == 12000)
         assert(destination.value.hasLaunched && destination.value.spectrumEnabled && destination.value.screenHint.isEmpty)
         assert(SettingsStore(url: destinationURL).value == destination.value)
@@ -47,6 +49,8 @@ import CoreGraphics
         let simpleReload = try Settings.decode(JSONEncoder().encode(detailed))
         assert(!simpleReload.advancedSettings && simpleReload.releaseMs == 289 && simpleReload.peakFallSpeed == 14)
         let defaultMode = try Settings.decode(Data("{}".utf8))
+        // 2026-09-11: Existing configurations remain capturable until the user explicitly enables exclusion.
+        assert(!defaultMode.hideInScreenshots)
         assert(!defaultMode.advancedSettings)
         // 2026-09-11: Verify custom migration, unlimited restoration, presets and persisted mode.
         let legacyRate = try Settings.decode(Data("{\"frameRate\":144}".utf8))

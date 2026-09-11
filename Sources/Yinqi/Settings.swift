@@ -18,6 +18,8 @@ struct Settings: Codable, Equatable {
     var customFrameRate = false
     var lastLimitedFrameRate = 60
     static let frameRatePresets = [10, 15, 30, 60, 120]
+    /// 2026-09-11: Opt in to screenshot exclusion using AppKit window sharing policy.
+    var hideInScreenshots = false
     var showInDock = true
     var hasLaunched = false
     var spectrumEnabled = false

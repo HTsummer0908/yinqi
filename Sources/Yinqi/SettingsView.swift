@@ -97,6 +97,7 @@ struct SettingsView: View {
             if enabled { enableSpectrum() } else { hideSpectrum() }
         }))
         SettingToggle("在 Dock 中显示", isOn: $store.value.showInDock)
+        SettingToggle("屏幕截图时隐藏", isOn: $store.value.hideInScreenshots)
         // 2026-09-11: Common presets explicitly dock and fill in one action, without entering edit mode.
         HStack {
             SettingLabel(title: "快速布局")
@@ -420,6 +421,7 @@ private struct SettingLabel: View {
         case "峰值标记": return "柱顶推高标记，随后缓慢落回柱顶。"
         case "基部也应用圆角": return "基部是贴边的一端；关闭时仅柱顶圆角。"
         case "柱间距": return "零间距连接相邻柱身，圆角处仍保留弧线。"
+        case "屏幕截图时隐藏": return "桌面上仍然显示，截图时排除悬浮内容。"
         case "在 Dock 中显示": return "关闭后仍可从菜单栏打开设置。关闭设置窗口不会停止频谱。"
         case "启用频谱": return "只分析本机系统播放音频，不保存或上传声音。"
         case "高级设置": return "提供更加细致的数值调整"
