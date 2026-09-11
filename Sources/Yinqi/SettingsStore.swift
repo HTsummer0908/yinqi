@@ -4,6 +4,8 @@ import Combine
 /// Main-thread observable settings with bounded debounce and atomic JSON replacement.
 final class SettingsStore: ObservableObject {
     @Published var value: Settings { didSet { onChange?(value.validated()); scheduleSave() } }
+    /// 2026-09-11: Mirror transient edit mode for settings without persisting or restarting capture.
+    @Published var isEditing = false
     @Published var warning: String?
     var onChange: ((Settings) -> Void)?
     private let url: URL

@@ -203,13 +203,17 @@ struct SettingsView: View {
                 Text("向上").tag("up"); Text("向下").tag("down")
             }
         } label: { SettingLabel(title: "生长方向") }.frame(minHeight: settingControlHeight)
-        HStack {
-            Button("居中") { quickLayout("center") }
-            Button("沿当前边铺满") { quickLayout("fill") }
-            SettingInfo(text: "铺满使用屏幕可用区域；编辑模式可调整停靠位置、居中和锁定。")
-            Button("调整 / 锁定悬浮窗", action: editSpectrum)
-        }.frame(minHeight: settingControlHeight)
         NumericSettingRow(name: "边缘间距", value: $store.value.edgeInset, range: 0...120, unit: "pt", step: 1, presets: [0, 8, 24, 60, 120], advanced: store.value.advancedSettings, lowLabel: "近", highLabel: "远")
+        // 2026-09-11: Separate one-shot layout commands from the synchronized editing mode switch.
+        HStack {
+            SettingLabel(title: "快速布局")
+            Spacer()
+            Button(action: { quickLayout("center") }) { Text("居中").frame(width: 76) }
+            Button(action: { quickLayout("fill") }) { Text("沿边铺满").frame(width: 76) }
+        }.frame(minHeight: settingControlHeight)
+        SettingToggle("调整位置与尺寸", isOn: Binding(get: { store.isEditing }, set: { enabled in
+            if enabled != store.isEditing { editSpectrum() }
+        }))
     }
     }
 
@@ -395,6 +399,8 @@ private struct SettingLabel: View {
     let title: String
     private var hint: String? {
         switch title {
+        case "快速布局": return "居中保留当前尺寸；沿边铺满使用屏幕可用区域。"
+        case "调整位置与尺寸": return "开启后可拖动悬浮窗和边框；关闭后锁定并恢复鼠标穿透。"
         case "峰值标记": return "柱顶推高标记，随后缓慢落回柱顶。"
         case "基部也应用圆角": return "基部是贴边的一端；关闭时仅柱顶圆角。"
         case "柱间距": return "零间距连接相邻柱身，圆角处仍保留弧线。"

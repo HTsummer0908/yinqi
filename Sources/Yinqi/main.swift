@@ -17,7 +17,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var editItem: NSMenuItem!
     private var spectrumItem: NSMenuItem!
     private var placementItems: [String: NSMenuItem] = [:]
-    private var mode = PresentationMode.hidden
+    /// 2026-09-11: Every mode transition updates the settings switch, including menu, toolbar and hide actions.
+    private var mode = PresentationMode.hidden { didSet { store.isEditing = mode == .editing } }
     private var suspended = Set<String>()
     private var observers = [NSObjectProtocol]()
     private var renderTimer: DispatchSourceTimer?

@@ -106,7 +106,8 @@ final class OverlayWindowController {
 
 /// Hit-test surface accepts mouse gestures only in editing mode; locked clicks pass at NSPanel level.
 private final class EditingSurface: NSView {
-    var editing = false
+    /// 2026-09-11: Rebuild cursor regions whenever editing is toggled.
+    var editing = false { didSet { window?.invalidateCursorRects(for: self) } }
     var vertical = false
     var onMove: (() -> Void)?
     var onEnd: ((NSRect) -> Void)?
@@ -116,6 +117,34 @@ private final class EditingSurface: NSView {
 
     /// Route editor gestures to the parent rather than the Metal child view.
     override func hitTest(_ point: NSPoint) -> NSView? { editing ? self : nil }
+
+    /// 2026-09-11: Match resize cursors to the existing 8 pt drag zones, with nonoverlapping corner regions.
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        guard editing else { return }
+        let w = bounds.width, h = bounds.height, edge: CGFloat = 8
+        guard w >= edge * 2, h >= edge * 2 else { return }
+        let regions: [(NSRect, NSCursor.FrameResizePosition)] = [
+            (NSRect(x: 0, y: edge, width: edge, height: h-2*edge), .left),
+            (NSRect(x: w-edge, y: edge, width: edge, height: h-2*edge), .right),
+            (NSRect(x: edge, y: 0, width: w-2*edge, height: edge), .bottom),
+            (NSRect(x: edge, y: h-edge, width: w-2*edge, height: edge), .top),
+            (NSRect(x: 0, y: 0, width: edge, height: edge), .bottomLeft),
+            (NSRect(x: w-edge, y: 0, width: edge, height: edge), .bottomRight),
+            (NSRect(x: 0, y: h-edge, width: edge, height: edge), .topLeft),
+            (NSRect(x: w-edge, y: h-edge, width: edge, height: edge), .topRight)
+        ]
+        for (rect, position) in regions {
+            addCursorRect(rect, cursor: .frameResize(position: position, directions: .all))
+        }
+        addCursorRect(bounds.insetBy(dx: edge, dy: edge), cursor: .openHand)
+    }
+
+    /// 2026-09-11: Keep cursor regions attached to current edges after resizing or applying quick layouts.
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        window?.invalidateCursorRects(for: self)
+    }
 
     /// Cache the gesture origin once so resize and drag are stable across event frequencies.
     override func mouseDown(with event: NSEvent) {
