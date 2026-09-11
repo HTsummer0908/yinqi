@@ -13,6 +13,7 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
     private var editing = false
     var frameProvider: (() -> SpectrumFrame?)?
     private var animation = SpectrumAnimation()
+    private var peaks = PeakAnimation()
     private var animatedBands: [Float]?
     private var hidden = true
 
@@ -46,8 +47,9 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
         let wasPaused = view.isPaused
         // 2026-09-11: Reset animation when the meaning of each bar changes; never blend channels.
         if self.settings.channelMode != settings.channelMode || self.settings.barCount != settings.barCount ||
-            self.settings.frequencyMin != settings.frequencyMin || self.settings.frequencyMax != settings.frequencyMax {
-            animation = SpectrumAnimation()
+            self.settings.frequencyMin != settings.frequencyMin || self.settings.frequencyMax != settings.frequencyMax || self.settings.stereoOrder != settings.stereoOrder ||
+            self.settings.peakEnabled != settings.peakEnabled || self.settings.growthDirection != settings.growthDirection {
+            animation = SpectrumAnimation(); peaks = PeakAnimation()
         }
         self.hidden = hidden
         animatedBands = nil
@@ -58,7 +60,7 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
         let rate = settings.frameRate == 0 ? maximum : min(maximum, max(10, settings.frameRate))
         if view.preferredFramesPerSecond != rate { view.preferredFramesPerSecond = rate }
         let paused = hidden || self.frame.opacity <= 0
-        if paused { animation = SpectrumAnimation() }
+        if paused { animation = SpectrumAnimation(); peaks = PeakAnimation() }
         view.isPaused = paused
         if paused && !wasPaused { view.draw() }
         if editing && paused && !hidden { view.draw() }
@@ -106,6 +108,8 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
     func encodeBars(using encoder: MTLRenderCommandEncoder, size: CGSize) {
         if !frame.bands.isEmpty && frame.opacity > 0 {
             let bars = animatedBands ?? frame.bands
+            // 2026-09-11: Peak state shares the render clock and the existing single GPU pass.
+            let markers = settings.peakEnabled ? peaks.advance(bars: bars, time: ProcessInfo.processInfo.systemUptime, speed: settings.peakFallSpeed / 100) : bars
             let count = bars.count
             let stereo = settings.channelMode == "stereo"
             let length = settings.isVertical ? size.height : size.width
@@ -121,10 +125,13 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
                 SIMD4<Float>(Float(last[0]),Float(last[1]),Float(last[2]),1),
                 SIMD4<Float>(settings.stereoOrder == "lowOutside" ? 1 : (settings.stereoOrder == "lowInside" ? 2 : 0),
                              settings.gradientDirection == "vertical" ? 1 : 0, settings.roundBase ? 1 : 0,
-                             ["up": Float(0), "down": 1, "right": 2, "left": 3][settings.growthDirection] ?? 0)
+                             ["up": Float(0), "down": 1, "right": 2, "left": 3][settings.growthDirection] ?? 0),
+                SIMD4<Float>(settings.peakEnabled ? 1:0, Float(settings.peakStyle == "line" ? 1:settings.peakThickness), settings.peakStyle == "rounded" ? 1:0, settings.peakCustomColor ? 1:0),
+                SIMD4<Float>(Float(settings.peakColor[0]),Float(settings.peakColor[1]),Float(settings.peakColor[2]),1)
             ]
             encoder.setRenderPipelineState(pipeline)
             bars.withUnsafeBytes { encoder.setFragmentBytes($0.baseAddress!,length:$0.count,index:0) }
+            markers.withUnsafeBytes { encoder.setFragmentBytes($0.baseAddress!,length:$0.count,index:2) }
             uniforms.withUnsafeMutableBytes { encoder.setFragmentBytes($0.baseAddress!,length:$0.count,index:1) }
             encoder.drawPrimitives(type:.triangleStrip,vertexStart:0,vertexCount:4)
         }
@@ -135,7 +142,7 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
     #include <metal_stdlib>
     using namespace metal;
     struct Out { float4 position [[position]]; float2 uv; };
-    struct Uniforms { float4 layout; float4 options; float4 style; float4 first; float4 last; float4 extra; };
+    struct Uniforms { float4 layout; float4 options; float4 style; float4 first; float4 last; float4 extra; float4 peak; float4 peakColor; };
     vertex Out vertexMain(uint id [[vertex_id]]) {
         float2 p[4]={float2(-1,-1),float2(1,-1),float2(-1,1),float2(1,1)};
         Out o; o.position=float4(p[id],0,1); o.uv=(p[id]+1)*0.5; return o;
@@ -165,7 +172,7 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
         float distance=length(max(q,0.0))+min(max(q.x,q.y),0.0)-radius;
         return 1-smoothstep(-0.5,0.5,distance);
     }
-    fragment float4 fragmentMain(Out in [[stage_in]], constant float *bands [[buffer(0)]], constant Uniforms &u [[buffer(1)]]) {
+    fragment float4 fragmentMain(Out in [[stage_in]], constant float *bands [[buffer(0)]], constant Uniforms &u [[buffer(1)]], constant float *peaks [[buffer(2)]]) {
         bool vertical=u.extra.w>1.5;
         float axisLength=vertical?u.layout.y:u.layout.x, amplitude=vertical?u.layout.x:u.layout.y;
         float x=(vertical?1-in.uv.y:in.uv.x)*axisLength;
@@ -181,7 +188,23 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
         if(u.style.x>1.5) mask*=step(1.3,fmod(y,6.0));
         float factor=u.extra.y>0.5?in.uv.y:in.uv.x;
         float3 color=u.style.x>0.5 && u.style.x<1.5?mix(u.first.rgb,u.last.rgb,factor):u.first.rgb;
+        // 2026-09-11: Caps use the growth axis and remain inside the drawable at maximum height.
+        float cap=0;
+        if(u.peak.x>0.5) {
+            float h=clamp(peaks[dataIndex(index,int(count),u)],0.0,1.0)*amplitude;
+            if(h>0.1) {
+                float t=min(u.peak.y,amplitude), bottom=min(h,amplitude-t);
+                float origin=index*pitch+(index>=int(count)/2?separator:0);
+                float radius=u.peak.z>0.5?min(width,t)*0.3:0;
+                float2 halfSize=float2(width,t)*0.5;
+                float2 q=abs(float2(x-origin,y-bottom)-halfSize)-halfSize+radius;
+                float d=length(max(q,0.0))+min(max(q.x,q.y),0.0)-radius;
+                cap=1-smoothstep(-0.5,0.5,d);
+            }
+        }
         float alpha=mask*u.options.x;
+        float ca=cap*u.options.x;
+        if(u.peak.x>0.5) return float4((u.peak.w>0.5?u.peakColor.rgb:color)*ca+color*alpha*(1-ca),ca+alpha*(1-ca))*u.style.y;
         // 2026-09-11: The overlay is always transparent outside bars; options.y is reserved for uniform alignment.
         return float4(color*alpha,alpha)*u.style.y;
     }
@@ -203,5 +226,19 @@ struct SpectrumAnimation {
             bands[i] = smooth(bands[i], target: target[i], dt: dt, tau: target[i] > bands[i] ? 0.03 : release)
         }
         return bands
+    }
+}
+
+/// 2026-09-11: Independent normalized peaks rise instantly and fall toward their bars at elapsed-time speed.
+struct PeakAnimation {
+    private(set) var values = [Float]()
+    private var lastTime: Double?
+    /// Reset changed layouts and prevent any marker from falling below its corresponding bar.
+    mutating func advance(bars: [Float], time: Double, speed: Double) -> [Float] {
+        if values.count != bars.count { values = bars; lastTime = nil }
+        let dt = lastTime.map { max(0, time - $0) } ?? 0
+        lastTime = time
+        for i in bars.indices { values[i] = max(min(1,max(0,bars[i])), values[i]-Float(dt*speed)) }
+        return values
     }
 }

@@ -172,6 +172,20 @@ struct SettingsView: View {
         Toggle("基部也应用圆角", isOn: $store.value.roundBase)
         Text("基部指贴边的一端；关闭时仅柱顶圆角。零柱间距连接相邻柱身，圆角处仍保留弧线。")
             .font(.caption).foregroundStyle(.secondary)
+        Toggle("峰值标记", isOn: $store.value.peakEnabled)
+        if store.value.peakEnabled {
+            Picker("标记样式", selection: $store.value.peakStyle) {
+                Text("细横线").tag("line"); Text("小砖块").tag("brick"); Text("圆角砖块").tag("rounded")
+            }
+            if store.value.peakStyle != "line" {
+                NumericSettingRow(name: "标记厚度", value: $store.value.peakThickness, range: 1...12, unit: "pt", step: 0.5)
+            }
+            NumericSettingRow(name: "下落速度", value: $store.value.peakFallSpeed, range: 1...200, unit: "%/s", step: 1)
+            Toggle("自定义标记颜色", isOn: $store.value.peakCustomColor)
+            if store.value.peakCustomColor { ColorPicker("标记颜色", selection: peakColorBinding, supportsOpacity: false) }
+            Text("柱顶推高标记，随后缓慢落回柱顶；速度为每秒下降高度百分比，细横线固定 1 pt。")
+                .font(.caption).foregroundStyle(.secondary)
+        }
         NumericSettingRow(name: "柱条透明度", value: percentBinding(\Settings.barOpacity), range: 10...100, unit: "%", step: 1)
     }
     }
@@ -198,6 +212,17 @@ struct SettingsView: View {
             .font(.caption).foregroundStyle(.secondary)
         NumericSettingRow(name: "边缘间距", value: $store.value.edgeInset, range: 0...120, unit: "pt", step: 1)
     }
+    }
+
+    /// 2026-09-11: Persist the optional marker palette as portable RGB.
+    private var peakColorBinding: Binding<Color> {
+        Binding(get: {
+            let c = store.value.peakColor
+            return Color(red: c[0], green: c[1], blue: c[2])
+        }, set: { color in
+            guard let c = NSColor(color).usingColorSpace(.deviceRGB) else { return }
+            store.value.peakColor = [Double(c.redComponent), Double(c.greenComponent), Double(c.blueComponent)]
+        })
     }
 
     /// 2026-09-11: Zero encodes screen-following mode; switching back restores the prior finite rate.

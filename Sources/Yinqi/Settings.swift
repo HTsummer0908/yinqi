@@ -37,6 +37,12 @@ struct Settings: Codable, Equatable {
     var cornerRadius = 2.0
     var sensitivityDB = 0.0
     var releaseMs = 180.0
+    var peakEnabled = false
+    var peakStyle = "brick"
+    var peakThickness = 3.0
+    var peakFallSpeed = 30.0
+    var peakCustomColor = false
+    var peakColor = [1.0, 1.0, 1.0]
 
     /// Constrain external configuration before allocating arrays or applying window geometry.
     func validated() -> Settings {
@@ -67,6 +73,11 @@ struct Settings: Codable, Equatable {
         s.barOpacity = bound(barOpacity, 0.1, 1, 0.7)
         s.sensitivityDB = bound(sensitivityDB, -24, 24, 0)
         s.releaseMs = bound(releaseMs, 80, 500, 180)
+        // 2026-09-11: Normalize peak configuration before passing values to the shader.
+        if !["line", "brick", "rounded"].contains(s.peakStyle) { s.peakStyle = "brick" }
+        s.peakThickness = bound(peakThickness, 1, 12, 3)
+        s.peakFallSpeed = bound(peakFallSpeed, 1, 200, 30)
+        s.peakColor = normalizedColor(peakColor)
         s.primaryColor = normalizedColor(primaryColor)
         s.gradientColors = gradientColors.count == 2 ? gradientColors.map(normalizedColor) : Settings().gradientColors
         return s

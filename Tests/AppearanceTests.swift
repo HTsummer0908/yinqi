@@ -6,6 +6,30 @@ import MetalKit
     /// Render controlled bar heights and inspect coverage/color rather than relying on submission counts.
     static func main() throws {
         _ = NSApplication.shared
+        // 2026-09-11: Equal elapsed time must produce equal peak decay, independent of refresh rate.
+        for fps in [10,30,60,144,240] {
+            var peak = PeakAnimation()
+            _ = peak.advance(bars:[1,0.2],time:0,speed:0.3)
+            for tick in 1...fps { _ = peak.advance(bars:[0.1,0.2],time:Double(tick)/Double(fps),speed:0.3) }
+            assert(abs(peak.values[0]-0.7)<0.0001 && peak.values[1] == 0.2)
+            assert(peak.advance(bars:[0.9,0.2],time:1.1,speed:0.3)[0] == 0.9)
+            assert(peak.advance(bars:[0.4],time:2,speed:0.3) == [0.4])
+        }
+        // 2026-09-11: A red peak must appear beyond a blue half-height bar in every growth direction.
+        for direction in ["up","down","left","right"] {
+            for style in ["line","brick","rounded"] {
+                var cap = Settings(); cap.barCount=16; cap.barOpacity=1; cap.primaryColor=[0,0,1]
+                cap.peakEnabled=true; cap.peakCustomColor=true; cap.peakColor=[1,0,0]
+                cap.peakStyle=style; cap.peakThickness=4; cap.growthDirection=direction
+                let vertical = direction == "left" || direction == "right"
+                let w=vertical ? 96:320, h=vertical ? 320:96
+                let bytes=try render(cap,bands:[Float](repeating:0.5,count:16),width:w,height:h)
+                assert(stride(from:0,to:bytes.count,by:4).contains { bytes[$0+2]>150 && bytes[$0]<80 }, "missing red cap: \(direction) \(style)")
+                cap.peakEnabled=false
+                let off=try render(cap,bands:[Float](repeating:0.5,count:16),width:w,height:h)
+                assert(!stride(from:0,to:off.count,by:4).contains { off[$0+2]>150 }, "disabled cap rendered")
+            }
+        }
         var settings = Settings(); settings.gap = 0; settings.cornerRadius = 0; settings.barOpacity = 1
         for mode in ["merged", "stereo"] {
             settings.channelMode = mode
