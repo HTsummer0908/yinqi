@@ -5,7 +5,7 @@ import SwiftUI
 enum PresentationMode { case hidden, locked, editing }
 
 /// Coordinates UI lifecycle on AppKit's main thread; capture and FFT remain on their serial worker.
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var item: NSStatusItem!
     private let capture = AudioCaptureService()
     private let store = SettingsStore()
@@ -15,6 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var text: NSTextView!
     private var statusItem: NSMenuItem!
     private var editItem: NSMenuItem!
+    private var spectrumItem: NSMenuItem!
+    private var placementItems: [String: NSMenuItem] = [:]
     private var mode = PresentationMode.hidden
     private var suspended = Set<String>()
     private var observers = [NSObjectProtocol]()
@@ -46,14 +48,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let menu = NSMenu()
         statusItem = NSMenuItem(title:"尚未启用",action:nil,keyEquivalent:""); menu.addItem(statusItem)
-        add("显示 / 启用频谱",#selector(enable),to:menu)
-        add("隐藏并停止采集",#selector(hide),to:menu)
+        // 2026-09-11: One checked command represents enable intent, including silence and temporary suspension.
+        menu.delegate = self
+        spectrumItem = add("启用频谱", #selector(toggleSpectrum), to: menu)
         editItem = add("调整位置与尺寸",#selector(toggleEditing),to:menu)
-        add("放到底部",#selector(bottom),to:menu)
-        add("放到顶部",#selector(top),to:menu)
-        add("放到左侧",#selector(left),to:menu)
-        add("放到右侧",#selector(right),to:menu)
-        add("重置到当前可见屏幕",#selector(resetPosition),to:menu)
+        // 2026-09-11: Native submenu provides hover expansion and keyboard navigation without custom event handling.
+        let placementMenu = NSMenu(title: "停靠位置")
+        placementMenu.delegate = self
+        let placementRoot = NSMenuItem(title: "停靠位置", action: nil, keyEquivalent: "")
+        placementRoot.submenu = placementMenu; menu.addItem(placementRoot)
+        for (key, title, action) in [("bottom", "底部", #selector(bottom)), ("top", "顶部", #selector(top)),
+                                      ("left", "左侧", #selector(left)), ("right", "右侧", #selector(right))] {
+            placementItems[key] = add(title, action, to: placementMenu)
+        }
+        placementMenu.addItem(.separator())
+        add("重置到当前可见屏幕",#selector(resetPosition),to:placementMenu)
         menu.addItem(.separator())
         add("设置…",#selector(showSettings),to:menu)
         add("诊断…",#selector(showDiagnostics),to:menu)
@@ -103,6 +112,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Explicit targets keep the accessory app's menu independent of the current responder chain.
     @discardableResult private func add(_ title: String, _ action: Selector, to menu: NSMenu) -> NSMenuItem {
         let entry = NSMenuItem(title:title,action:action,keyEquivalent:""); entry.target = self; menu.addItem(entry); return entry
+    }
+
+    /// 2026-09-11: Toggle the same capture lifecycle used by settings; silence never turns the switch off.
+    @objc private func toggleSpectrum() {
+        if mode == .hidden { enable() } else { hide() }
+    }
+
+    /// 2026-09-11: Refresh checks on opening so settings, dragging and toolbar changes cannot leave stale menu state.
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        spectrumItem.state = mode == .hidden ? .off : .on
+        editItem.state = mode == .editing ? .on : .off
+        for (placement, entry) in placementItems {
+            entry.state = store.value.placementMode == placement ? .on : .off
+        }
     }
 
     /// User display intent survives sleep but never overrides an explicit hidden state.
