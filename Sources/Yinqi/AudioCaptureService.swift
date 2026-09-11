@@ -5,6 +5,7 @@ import Realtime
 /// Stage A metadata only; no raw audio is logged or persisted.
 struct CaptureStatus {
     var message: String
+    var isError: Bool = false
     var sampleRate: Double = 0
     var channels: UInt32 = 0
     var callbacks: UInt64 = 0
@@ -97,7 +98,7 @@ final class AudioCaptureService {
                 source.resume()
             } catch {
                 guard releaseResources() else { return }
-                publish(CaptureStatus(message: "采集失败：\(error.localizedDescription)。可在系统设置中检查屏幕与系统音频录制权限，再手动重试。"))
+                publish(CaptureStatus(message: "采集失败：\(error.localizedDescription)。可在系统设置中检查屏幕与系统音频录制权限，再手动重试。", isError: true))
             }
     }
 
@@ -153,7 +154,7 @@ final class AudioCaptureService {
             let destroyed = AudioDeviceDestroyIOProcID(device, io)
             // 2026-09-11: Retain context on unregister failure; freeing it could race a live HAL callback.
             guard destroyed == noErr else {
-                publish(CaptureStatus(message: "停止资源失败：stop=\(stopped), unregister=\(destroyed)；缓冲仍保留，请重试或退出"))
+                publish(CaptureStatus(message: "停止资源失败：stop=\(stopped), unregister=\(destroyed)；缓冲仍保留，请重试或退出", isError: true))
                 return false
             }
             self.io = nil
@@ -161,12 +162,12 @@ final class AudioCaptureService {
         if let pcm { sb_destroy(pcm); self.pcm = nil }
         if device != 0 {
             let status = AudioHardwareDestroyAggregateDevice(device)
-            guard status == noErr else { publish(CaptureStatus(message: "释放聚合设备失败 OSStatus=\(status)，请重试")); return false }
+            guard status == noErr else { publish(CaptureStatus(message: "释放聚合设备失败 OSStatus=\(status)，请重试", isError: true)); return false }
             device = 0
         }
         if tap != 0 {
             let status = AudioHardwareDestroyProcessTap(tap)
-            guard status == noErr else { publish(CaptureStatus(message: "释放 tap 失败 OSStatus=\(status)，请重试")); return false }
+            guard status == noErr else { publish(CaptureStatus(message: "释放 tap 失败 OSStatus=\(status)，请重试", isError: true)); return false }
             tap = 0
         }
         return true
@@ -189,7 +190,7 @@ final class AudioCaptureService {
             }
         }
         if AudioObjectAddPropertyListenerBlock(object, &address, control, block) == noErr { listeners.append((object,address,block)) }
-        else { publish(CaptureStatus(message: "设备监听注册失败；设备变化后请手动重试")) }
+        else { publish(CaptureStatus(message: "设备监听注册失败；设备变化后请手动重试", isError: true)) }
     }
 
     /// Marshal immutable diagnostics to the UI thread.

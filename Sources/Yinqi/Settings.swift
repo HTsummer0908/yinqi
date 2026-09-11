@@ -30,7 +30,6 @@ struct Settings: Codable, Equatable {
     var primaryColor = [0.2, 0.85, 1.0]
     var gradientColors = [[0.2, 0.85, 1.0], [0.9, 0.25, 0.65]]
     var barOpacity = 0.7
-    var backgroundOpacity = 0.0
     var gap = 2.0
     var cornerRadius = 2.0
     var sensitivityDB = 0.0
@@ -59,8 +58,7 @@ struct Settings: Codable, Equatable {
         s.edgeInset = bound(edgeInset, 0, 120, 8)
         s.gap = bound(gap, 0, 8, 2); s.cornerRadius = bound(cornerRadius, 0, 8, 2)
         s.barOpacity = bound(barOpacity, 0.1, 1, 0.7)
-        s.backgroundOpacity = bound(backgroundOpacity, 0, 1, 0)
-        s.sensitivityDB = bound(sensitivityDB, -12, 24, 0)
+        s.sensitivityDB = bound(sensitivityDB, -24, 24, 0)
         s.releaseMs = bound(releaseMs, 80, 500, 180)
         s.primaryColor = normalizedColor(primaryColor)
         s.gradientColors = gradientColors.count == 2 ? gradientColors.map(normalizedColor) : Settings().gradientColors

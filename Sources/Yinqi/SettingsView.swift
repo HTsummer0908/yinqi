@@ -69,7 +69,7 @@ struct SettingsView: View {
         }
         Section("隐私与项目状态") {
             Text("音频仅在本机实时分析，不录制、不保存、不上传。仅持久化应用设置。")
-            Text("诊断按需开启；应用不会自动检查更新或发送遥测。点击外部链接时由浏览器访问 GitHub。")
+            Text("诊断按需开启；应用不会自动检查更新或发送遥测。")
             Text("开源许可证待确定；正式发布信息以项目 README 为准。")
                 .font(.caption).foregroundStyle(.secondary)
         }
@@ -80,10 +80,10 @@ struct SettingsView: View {
     Section("Yinqi") {
         Text("只分析本机系统播放音频，不保存或上传声音。")
             .font(.caption).foregroundStyle(.secondary)
-        HStack {
-            Button("显示 / 启用频谱", action: enableSpectrum)
-            Button("隐藏并停止采集", action: hideSpectrum)
-        }
+        // 2026-09-11: Use the persisted enable intent shared with the menu, while actions own capture lifecycle.
+        Toggle("启用频谱", isOn: Binding(get: { store.value.spectrumEnabled }, set: { enabled in
+            if enabled { enableSpectrum() } else { hideSpectrum() }
+        }))
         Toggle("在 Dock 中显示", isOn: $store.value.showInDock)
         Text("关闭后仍可通过菜单栏频谱图标 打开设置。关闭设置窗口不会停止频谱。")
             .font(.caption).foregroundStyle(.secondary)
@@ -140,7 +140,7 @@ struct SettingsView: View {
         }
         Text("实际帧率受屏幕和系统调度影响；静音淡出后暂停绘制。")
             .font(.caption).foregroundStyle(.secondary)
-        NumericSettingRow(name: "灵敏度", value: $store.value.sensitivityDB, range: -12...24, unit: "dB", step: 0.1)
+        NumericSettingRow(name: "灵敏度", value: $store.value.sensitivityDB, range: -24...24, unit: "dB", step: 0.1)
         NumericSettingRow(name: "回落时间", value: $store.value.releaseMs, range: 80...500, unit: "ms", step: 1)
     }
     }
@@ -169,7 +169,6 @@ struct SettingsView: View {
         Text("基部指贴边的一端；关闭时仅柱顶圆角。零柱间距连接相邻柱身，圆角处仍保留弧线。")
             .font(.caption).foregroundStyle(.secondary)
         NumericSettingRow(name: "柱条透明度", value: percentBinding(\Settings.barOpacity), range: 10...100, unit: "%", step: 1)
-        NumericSettingRow(name: "背景透明度", value: percentBinding(\Settings.backgroundOpacity), range: 0...100, unit: "%", step: 1)
     }
     }
 

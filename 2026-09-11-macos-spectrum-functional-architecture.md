@@ -80,7 +80,6 @@
 | 柱条数量 | 64 | 16 / 32 / 64 / 128 |
 | 柱间距 | 2 pt | 0–8 pt，布局不足时自动缩小有效间距 |
 | 柱条透明度 | 70% | 10–100% |
-| 背景透明度 | 0% | 0–100%，独立于柱条 |
 | 圆角 | 2 pt | 0–8 pt，受柱宽和柱高约束 |
 | 风格 | 极简纯色 | 纯色、渐变、LED |
 | 频率范围 | 20 Hz–20 kHz | 首版固定，上限受 Nyquist 频率约束 |
@@ -202,7 +201,7 @@ Info.plist 提供 NSAudioCaptureUsageDescription。以实际 .app 包运行验�
 
 保存至 Application Support 下应用专属目录 settings.json，schemaVersion=1。最终 bundle identifier 和应用名称由开发初始化时确定，不能复用其他应用目录。
 
-配置字段：placementMode、frame、screenHint、edgeInset、growthDirection、barCount、style、primaryColor、gradientColors、barOpacity、backgroundOpacity、gap、cornerRadius、sensitivityDB、releaseMs。
+配置字段：placementMode、frame、screenHint、edgeInset、growthDirection、barCount、style、primaryColor、gradientColors、barOpacity、gap、cornerRadius、sensitivityDB、releaseMs。
 
 frame 使用逻辑点；screenHint 仅用于尽力恢复，不构成多屏配置。启动时对照当前屏幕重定位和裁剪。编辑完成立即保存，连续设置更改防抖约 300 ms，采用临时文件加原子替换。
 

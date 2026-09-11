@@ -47,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.button?.title = "▥"
         }
         let menu = NSMenu()
+        menu.minimumWidth = 240
         statusItem = NSMenuItem(title:"尚未启用",action:nil,keyEquivalent:""); menu.addItem(statusItem)
         // 2026-09-11: One checked command represents enable intent, including silence and temporary suspension.
         menu.delegate = self
@@ -75,7 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             overlay?.renderer.frameProvider = { [weak self] in self?.capture.frames.snapshot() }
             overlay?.onQuickAction = { [weak self] action in self?.quickLayout(action) }
             overlay?.onFrameChanged = { [weak self] frame,snap in self?.saveFrame(frame,snap:snap) }
-        } catch { lastStatus = CaptureStatus(message:"Metal 初始化失败：\(error.localizedDescription)") }
+        } catch { lastStatus = CaptureStatus(message:"Metal 初始化失败：\(error.localizedDescription)", isError: true) }
         capture.configure(store.value)
         capture.onStatus = { [weak self] status in self?.lastStatus = status; self?.updateDiagnostics() }
         store.onChange = { [weak self] value in
@@ -241,7 +242,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Report real capture data and actual renderer pause state separately from the user's display intent.
     private func updateDiagnostics() {
         let f=capture.frames.snapshot()
-        statusItem.title = mode == .hidden ? "已隐藏" : (f.opacity == 0 ? "无声音 / \(lastStatus.message.prefix(28))" : String(lastStatus.message.prefix(40)))
+        // 2026-09-11: Fixed short states keep diagnostics out of the menu and avoid width changes.
+        if mode == .hidden { statusItem.title = "频谱已关闭" }
+        else if !suspended.isEmpty { statusItem.title = "频谱已暂停" }
+        else if lastStatus.isError { statusItem.title = "采集异常：查看诊断" }
+        else if f.opacity == 0 { statusItem.title = "等待声音" }
+        else { statusItem.title = "频谱运行中" }
         // 2026-09-11: No diagnostic string allocation or UI refresh while its window is closed.
         guard diagnostics?.isVisible == true else { return }
         text.string="仅在本机分析系统播放音频，不保存或上传声音。\n请点击启用系统音频；拒绝后请在系统设置检查权限，再手动重试。\n\n状态：\(lastStatus.message)\n采样率：\(lastStatus.sampleRate) Hz；通道：\(lastStatus.channels)\nIO 回调：\(lastStatus.callbacks)；丢弃帧：\(lastStatus.dropped)\nRMS：\(String(format:"%.2f",lastStatus.rmsDB)) dBFS；Peak：\(lastStatus.peak)\n分析序号：\(f.sequence)；\(store.value.barCount) 柱；GPU 连续绘制暂停：\(overlay?.renderer.view.isPaused ?? true)\n频段峰值：\(f.bands.max() ?? 0)；淡出系数：\(f.opacity)\n绘制回调：\(overlay?.renderer.drawCallbacks ?? 0)；提交帧：\(overlay?.renderer.submittedFrames ?? 0)\n画布：\(overlay?.renderer.view.bounds.size ?? .zero)；窗口可见：\(overlay?.panel.isVisible ?? false)\n绘制状态：\(overlay?.renderer.lastDrawFailure ?? "无渲染器")\n\n\(store.warning ?? "窗口全屏兼容与设备恢复范围见测试报告。")"

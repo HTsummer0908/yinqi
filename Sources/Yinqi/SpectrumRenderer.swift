@@ -115,7 +115,7 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
             let last = settings.gradientColors[1]
             var uniforms = [
                 SIMD4<Float>(Float(size.width),Float(size.height),Float(count),Float(gap)),
-                SIMD4<Float>(Float(settings.barOpacity),Float(settings.backgroundOpacity),Float(settings.cornerRadius),settings.growthDirection == "down" ? 1:0),
+                SIMD4<Float>(Float(settings.barOpacity),0,Float(settings.cornerRadius),settings.growthDirection == "down" ? 1:0),
                 SIMD4<Float>(settings.style == "gradient" ? 1 : (settings.style == "led" ? 2:0),Float(frame.opacity),Float(centerGap),stereo ? 1:0),
                 SIMD4<Float>(Float(first[0]),Float(first[1]),Float(first[2]),1),
                 SIMD4<Float>(Float(last[0]),Float(last[1]),Float(last[2]),1),
@@ -182,8 +182,8 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
         float factor=u.extra.y>0.5?in.uv.y:in.uv.x;
         float3 color=u.style.x>0.5 && u.style.x<1.5?mix(u.first.rgb,u.last.rgb,factor):u.first.rgb;
         float alpha=mask*u.options.x;
-        float background=u.options.y*(1-alpha);
-        return float4(color*alpha+(float3(0.03)*background),alpha+background)*u.style.y;
+        // 2026-09-11: The overlay is always transparent outside bars; options.y is reserved for uniform alignment.
+        return float4(color*alpha,alpha)*u.style.y;
     }
     """
 }

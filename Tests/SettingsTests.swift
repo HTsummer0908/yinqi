@@ -4,6 +4,15 @@ import CoreGraphics
 @main struct SettingsTests {
     /// Exercise missing fields, unknown keys, corruption, bounds, and a negative-coordinate screen.
     static func main() throws {
+        // 2026-09-11: Symmetric gain bounds and retired background fields remain compatible with old JSON.
+        for (input, expected) in [(-30.0, -24.0), (-24, -24), (0, 0), (24, 24), (30, 24)] {
+            var gain = Settings(); gain.sensitivityDB = input
+            assert(gain.validated().sensitivityDB == expected)
+        }
+        let retired = try Settings.decode(Data("{\"backgroundOpacity\":1,\"sensitivityDB\":-24}".utf8))
+        assert(retired.sensitivityDB == -24)
+        let retiredOutput = try JSONSerialization.jsonObject(with: JSONEncoder().encode(retired)) as! [String:Any]
+        assert(retiredOutput["backgroundOpacity"] == nil)
         // 2026-09-11: New preferences must survive old-file migration and validated round trips.
         let next = try Settings.decode(Data("{\"channelMode\":\"stereo\",\"frameRate\":2,\"showInDock\":false}".utf8))
         let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(next)) as! [String:Any]
