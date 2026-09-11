@@ -75,7 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         add("退出 Yinqi",#selector(quit),to:menu)
         item.menu = menu
         do {
-            overlay = try OverlayWindowController()
+            overlay = try OverlayWindowController(useLayers: ProcessInfo.processInfo.environment["YINQI_RENDERER"] != "metal")
             overlay?.apply(store.value)
             overlay?.renderer.frameProvider = { [weak self] in self?.capture.frames.snapshot() }
             overlay?.onQuickAction = { [weak self] action in self?.quickLayout(action) }
@@ -299,7 +299,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         else { statusItem.title = "频谱运行中" }
         // 2026-09-11: No diagnostic string allocation or UI refresh while its window is closed.
         guard diagnostics?.isVisible == true else { return }
-        text.string="仅在本机分析系统播放音频，不保存或上传声音。\n请点击启用系统音频；拒绝后请在系统设置检查权限，再手动重试。\n\n状态：\(lastStatus.message)\n采样率：\(lastStatus.sampleRate) Hz；通道：\(lastStatus.channels)\nIO 回调：\(lastStatus.callbacks)；丢弃帧：\(lastStatus.dropped)\nRMS：\(String(format:"%.2f",lastStatus.rmsDB)) dBFS；Peak：\(lastStatus.peak)\n分析序号：\(f.sequence)；\(store.value.barCount) 柱；GPU 连续绘制暂停：\(overlay?.renderer.view.isPaused ?? true)\n频段峰值：\(f.bands.max() ?? 0)；淡出系数：\(f.opacity)\n绘制回调：\(overlay?.renderer.drawCallbacks ?? 0)；提交帧：\(overlay?.renderer.submittedFrames ?? 0)\n画布：\(overlay?.renderer.view.bounds.size ?? .zero)；窗口可见：\(overlay?.panel.isVisible ?? false)\n绘制状态：\(overlay?.renderer.lastDrawFailure ?? "无渲染器")\n\n\(store.warning ?? "窗口全屏兼容与设备恢复范围见测试报告。")"
+        text.string="仅在本机分析系统播放音频，不保存或上传声音。\n请点击启用系统音频；拒绝后请在系统设置检查权限，再手动重试。\n\n状态：\(lastStatus.message)\n采样率：\(lastStatus.sampleRate) Hz；通道：\(lastStatus.channels)\nIO 回调：\(lastStatus.callbacks)；丢弃帧：\(lastStatus.dropped)\nRMS：\(String(format:"%.2f",lastStatus.rmsDB)) dBFS；Peak：\(lastStatus.peak)\n分析序号：\(f.sequence)；\(store.value.barCount) 柱；GPU 连续绘制暂停：\(overlay?.renderer.isPaused ?? true)\n频段峰值：\(f.bands.max() ?? 0)；淡出系数：\(f.opacity)\n绘制回调：\(overlay?.renderer.drawCallbacks ?? 0)；提交帧：\(overlay?.renderer.submittedFrames ?? 0)\n画布：\(overlay?.renderer.surfaceView.bounds.size ?? .zero)；窗口可见：\(overlay?.panel.isVisible ?? false)\n绘制状态：\(overlay?.renderer.lastDrawFailure ?? "无渲染器")\n\n\(store.warning ?? "窗口全屏兼容与设备恢复范围见测试报告。")"
     }
 
     /// 2026-09-11: A 10 Hz wake check replaces duplicate 60 Hz polling; drawing reads fresh frames directly.

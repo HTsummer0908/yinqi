@@ -9,7 +9,7 @@ final class OverlayPanel: NSPanel {
 /// Owns public window policy, screen restoration, and logical-point editing geometry.
 final class OverlayWindowController {
     let panel: OverlayPanel
-    let renderer: SpectrumRenderer
+    let renderer: any SpectrumRendering
     private let surface: EditingSurface
     var onQuickAction: ((String) -> Void)?
     private let toolbar = EditingToolbar()
@@ -24,8 +24,9 @@ final class OverlayWindowController {
     }
 
     /// Retain the exact Stage A policy verified with a separate full-screen Chrome application.
-    init() throws {
-        renderer = try SpectrumRenderer()
+    init(useLayers: Bool = false) throws {
+        // 2026-09-11: Tests keep the Metal reference; the performance app can select the layer implementation.
+        renderer = useLayers ? LayerSpectrumRenderer() : try SpectrumRenderer()
         panel = OverlayPanel(contentRect:.zero,styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false)
         surface = EditingSurface(frame:.zero)
         // 2026-09-11 11:06 +08:00: A transparent non-layer-backed host can leave the Metal
@@ -39,9 +40,9 @@ final class OverlayWindowController {
         panel.title = "Yinqi Spectrum"
         panel.isReleasedWhenClosed = false
         panel.contentView = surface
-        renderer.view.frame = surface.bounds
-        renderer.view.autoresizingMask = [.width,.height]
-        surface.addSubview(renderer.view)
+        renderer.surfaceView.frame = surface.bounds
+        renderer.surfaceView.autoresizingMask = [.width,.height]
+        surface.addSubview(renderer.surfaceView)
         toolbar.onAction = { [weak self] action in self?.onQuickAction?(action) }
         surface.onMove = { [weak self] in self?.updateToolbar() }
         surface.onEnd = { [weak self] frame in self?.finishDrag(frame) }

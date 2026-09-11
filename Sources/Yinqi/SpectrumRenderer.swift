@@ -1,7 +1,20 @@
 import MetalKit
 
+/// 2026-09-11: Shared presentation boundary allows measured layer rendering without removing the Metal reference backend.
+protocol SpectrumRendering: AnyObject {
+    var surfaceView: NSView { get }
+    var isPaused: Bool { get }
+    var drawCallbacks: UInt64 { get }
+    var submittedFrames: UInt64 { get }
+    var lastDrawFailure: String { get }
+    var frameProvider: (() -> SpectrumFrame?)? { get set }
+    func update(_ frame: SpectrumFrame, settings: Settings, editing: Bool, hidden: Bool)
+}
+
 /// Metal draws one transparent quad with analytic bars; no audio access or mutable DSP arrays.
-final class SpectrumRenderer: NSObject, MTKViewDelegate {
+final class SpectrumRenderer: NSObject, MTKViewDelegate, SpectrumRendering {
+    var surfaceView: NSView { view }
+    var isPaused: Bool { view.isPaused }
     let view: MTKView
     private(set) var drawCallbacks: UInt64 = 0
     private(set) var submittedFrames: UInt64 = 0

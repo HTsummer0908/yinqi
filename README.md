@@ -79,3 +79,7 @@ bash scripts/test-rendering.sh
 截图隐藏实现参考 [LyricsX](https://github.com/MxIris-LyricsX-Project/LyricsX) 的公开 AppKit 窗口共享策略。
 
 开源许可证待确认；私有准备阶段不授予额外开源许可。公开仓库前应完成许可证与分发方式确认。
+
+## 性能分支实验版
+
+本分支增加 Core Animation 后端，实验包为 1.0.1 build 28（perf2），不属于正式 1.0.0 Release。默认使用图层渲染；以 `YINQI_RENDERER=metal build/Yinqi.app/Contents/MacOS/Yinqi` 启动可对照 Metal。测量和未验证项见 [perf2 报告](docs/performance/2026-09-11-perf2-layers.md)。

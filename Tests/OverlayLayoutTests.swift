@@ -8,7 +8,7 @@ import MetalKit
         _ = NSApplication.shared
         let overlay = try OverlayWindowController()
         overlay.apply(Settings())
-        let view = overlay.renderer.view
+        let view = overlay.renderer.surfaceView as! MTKView
         assert(overlay.panel.contentView!.wantsLayer, "Metal host must participate in layer-backed window composition")
         print("panel=\(overlay.panel.frame) content=\(overlay.panel.contentView!.frame) metal=\(view.frame) drawable=\(view.drawableSize)")
         assert(view.bounds.width > 0 && view.bounds.height > 0, "Metal view must not remain zero sized")
@@ -43,7 +43,7 @@ import MetalKit
         var side = Settings().placing(at:"right"); side.layoutMode="fill"
         overlay.apply(side)
         assert(overlay.panel.frame.height == overlay.panel.screen!.visibleFrame.height)
-        assert(overlay.renderer.view.frame.size == overlay.panel.frame.size)
+        assert(overlay.renderer.surfaceView.frame.size == overlay.panel.frame.size)
         overlay.editing = true
         overlay.hide()
         assert(!toolbar.isVisible)
