@@ -98,8 +98,8 @@ struct SettingsView: View {
     }
     }
 
-    /// Render only the spectrum settings category.
-    private var spectrumSection: some View {
+    /// 2026-09-11: Separate frequency bounds from spectrum layout; preset sliders both increase reduction to the right.
+    @ViewBuilder private var spectrumSection: some View {
     Section("频谱") {
         Picker(selection: $store.value.channelMode) {
             Text("合并声道").tag("merged")
@@ -116,8 +116,10 @@ struct SettingsView: View {
             } label: { SettingLabel(title: "频率排列") }.frame(minHeight: settingControlHeight)
             NumericSettingRow(name: "声道额外间隔", value: $store.value.channelGap, range: 0...40, unit: "pt", step: 0.1, presets: [0, 4, 10, 20, 40], advanced: store.value.advancedSettings, lowLabel: "紧", highLabel: "宽")
         }
-        NumericSettingRow(name: "最低频率", value: $store.value.frequencyMin, range: 20...(store.value.frequencyMax-1), unit: "Hz", step: 1, presets: [20, 50, 100, 200, 500], advanced: store.value.advancedSettings, lowLabel: "低", highLabel: "高")
-        NumericSettingRow(name: "最高频率", value: $store.value.frequencyMax, range: (store.value.frequencyMin+1)...20000, unit: "Hz", step: 1, presets: [4000, 8000, 12000, 16000, 20000], advanced: store.value.advancedSettings, lowLabel: "低", highLabel: "高")
+    }
+    Section("频率范围") {
+        NumericSettingRow(name: "最低频率", value: $store.value.frequencyMin, range: 20...(store.value.frequencyMax-1), unit: "Hz", step: 1, presets: [20, 50, 100, 200, 500], advanced: store.value.advancedSettings, lowLabel: "不缩减", highLabel: "多", presetName: "低频范围缩减")
+        NumericSettingRow(name: "最高频率", value: $store.value.frequencyMax, range: (store.value.frequencyMin+1)...20000, unit: "Hz", step: 1, presets: [20000, 16000, 12000, 8000, 4000], advanced: store.value.advancedSettings, lowLabel: "不缩减", highLabel: "多", presetName: "高频范围缩减")
     }
     }
 
@@ -273,6 +275,8 @@ private struct NumericSettingRow: View {
     var advanced = true
     var lowLabel = "小"
     var highLabel = "大"
+    /// 2026-09-11: Presets describe reduction; exact numeric editing retains frequency-bound terminology.
+    var presetName: String? = nil
     @StateObject private var input = NumericDraft()
     @FocusState private var focused: Bool
 
@@ -298,14 +302,14 @@ private struct NumericSettingRow: View {
             }.frame(minHeight: settingControlHeight)
             } else {
                 HStack {
-                    SettingLabel(title: name).frame(minWidth: 110, maxWidth: .infinity, alignment: .leading)
+                    SettingLabel(title: presetName ?? name).frame(minWidth: 110, maxWidth: .infinity, alignment: .leading)
                     VStack(spacing: 0) {
                         // 2026-09-11: Exactly five native stops provide readable ticks without the old dense numeric-step rendering.
                         // 2026-09-11: Grouped Form reserves an implicit label column unless labels are hidden.
                         // Give the track and captions the same explicit width to prevent the left caption drifting.
                         Slider(value: presetBinding, in: 0...Double(presets.count-1), step: 1)
                             .labelsHidden().frame(width: 306)
-                            .accessibilityLabel(name)
+                            .accessibilityLabel(presetName ?? name)
                         HStack {
                             Text(lowLabel)
                             Spacer()
@@ -398,7 +402,9 @@ private struct SettingLabel: View {
         case "启用频谱": return "只分析本机系统播放音频，不保存或上传声音。"
         case "高级设置": return "提供更加细致的数值调整"
         case "声道", "频率排列": return "左右声道各占一半柱数；水平时左、右排列，侧边时上、下排列。"
-        case "最低频率", "最高频率": return "仅调整频谱显示范围，不改变声音。上限受采样率限制，窄低频柱共享 FFT 分辨率。"
+        case "低频范围缩减": return "向右拖动，减少显示的低频范围。"
+        case "高频范围缩减": return "向右拖动，减少显示的高频范围。"
+        case "最低频率", "最高频率": return "设置频谱显示的频率边界。上限受采样率限制，窄低频柱共享 FFT 分辨率。"
         case "目标帧率", "无限制（跟随屏幕最高刷新率）": return "实际帧率受屏幕和系统调度影响；静音淡出后暂停绘制。"
         default: return nil
         }
