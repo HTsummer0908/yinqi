@@ -1,14 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-<key>CFBundleIdentifier</key><string>local.xinfei.yinqi</string>
-<key>CFBundleName</key><string>Yinqi</string>
-<key>CFBundleExecutable</key><string>Yinqi</string>
-<key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>1.0.1</string>
-<key>CFBundleVersion</key><string>28</string>
-<key>LSMinimumSystemVersion</key><string>26.0</string>
-<key>LSUIElement</key><true/>
-<key>NSAudioCaptureUsageDescription</key><string>仅在本机分析系统播放音频以显示频谱，不保存或上传声音。</string>
-<key>NSHighResolutionCapable</key><true/>
-</dict></plist>
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>local.xinfei.yinqi</string>
+	<key>CFBundleName</key>
+	<string>Yinqi</string>
+	<key>CFBundleExecutable</key>
+	<string>Yinqi</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.1</string>
+	<key>CFBundleVersion</key>
+	<string>32</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>26.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>System audio is analyzed locally. Audio is never saved or uploaded.</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>CFBundleDisplayName</key>
+	<string>Yinqi</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>zh-Hans</string>
+		<string>zh-HK</string>
+		<string>zh-TW</string>
+		<string>en</string>
+		<string>fr</string>
+		<string>de</string>
+		<string>ja</string>
+		<string>ko</string>
+	</array>
+</dict>
+</plist>

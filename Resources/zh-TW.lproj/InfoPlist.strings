@@ -1,0 +1,3 @@
+"CFBundleDisplayName" = "音棲";
+"CFBundleName" = "音棲";
+"NSAudioCaptureUsageDescription" = "只分析本機系統播放音訊，不保存或上傳聲音。";

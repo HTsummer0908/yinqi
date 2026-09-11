@@ -1,0 +1,3 @@
+"CFBundleDisplayName" = "音栖";
+"CFBundleName" = "音栖";
+"NSAudioCaptureUsageDescription" = "只分析本机系统播放音频，不保存或上传声音。";

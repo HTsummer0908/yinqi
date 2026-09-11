@@ -47,6 +47,6 @@ import MetalKit
         overlay.editing = true
         overlay.hide()
         assert(!toolbar.isVisible)
-        print("PASS: overlay / host / Metal dimensions and active submissions")
+        print("PASS: overlay / host / Metal dimensions and window lifecycle")
     }
 }

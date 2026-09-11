@@ -1,3 +1,4 @@
+// 2026-09-11: Route user-visible labels and messages through the process-selected localization resources.
 import MetalKit
 
 /// 2026-09-11: Shared presentation boundary allows measured layer rendering without removing the Metal reference backend.
@@ -8,6 +9,7 @@ protocol SpectrumRendering: AnyObject {
     var submittedFrames: UInt64 { get }
     var lastDrawFailure: String { get }
     var frameProvider: (() -> SpectrumFrame?)? { get set }
+    func shutdown()
     func update(_ frame: SpectrumFrame, settings: Settings, editing: Bool, hidden: Bool)
 }
 
@@ -18,7 +20,9 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate, SpectrumRendering {
     let view: MTKView
     private(set) var drawCallbacks: UInt64 = 0
     private(set) var submittedFrames: UInt64 = 0
-    private(set) var lastDrawFailure = "尚未收到绘制回调"
+    private(set) var lastDrawFailure = L("尚未收到绘制回调")
+    /// 2026-09-11: Resolve once; localization must not add work to each animation frame.
+    private let noDrawFailure = L("无")
     private let queue: MTLCommandQueue
     private let pipeline: MTLRenderPipelineState
     private var frame = SpectrumFrame(bands: [], rmsDB: -160, timestamp: 0, sequence: 0, opacity: 0)
@@ -29,11 +33,16 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate, SpectrumRendering {
     private var peaks = PeakAnimation()
     private var animatedBands: [Float]?
     private var hidden = true
+    /// 2026-09-11: Reuse 128-byte uniform storage; only opacity changes on ordinary display frames.
+    private var uniforms = [SIMD4<Float>](repeating: .zero, count: 8)
+    private var uniformsDirty = true
+    private var uniformSize = CGSize.zero
+    private var uniformCount = 0
 
     /// Compile the embedded Metal source once, allowing a CLT-only build without metal CLI tools.
     init(frame initialFrame: CGRect = .zero) throws {
         guard let device = MTLCreateSystemDefaultDevice(), let queue = device.makeCommandQueue() else {
-            throw NSError(domain: "Yinqi.Metal", code: 1, userInfo: [NSLocalizedDescriptionKey:"Metal 设备不可用"])
+            throw NSError(domain: "Yinqi.Metal", code: 1, userInfo: [NSLocalizedDescriptionKey:L("Metal 设备不可用")])
         }
         self.queue = queue
         view = MTKView(frame: initialFrame, device: device)
@@ -55,6 +64,13 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate, SpectrumRendering {
         view.delegate = self
     }
 
+    /// 2026-09-11: Stop callbacks and return drawable references before removing the backend's view.
+    func shutdown() {
+        frameProvider = nil
+        view.isPaused = true; view.delegate = nil
+        view.releaseDrawables()
+    }
+
     /// Publish immutable UI-side render inputs and perform a final clear before pausing.
     func update(_ frame: SpectrumFrame, settings: Settings, editing: Bool, hidden: Bool) {
         let wasPaused = view.isPaused
@@ -68,6 +84,7 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate, SpectrumRendering {
         animatedBands = nil
         self.frame = compatibleFrame(frame, settings: settings)
         if hidden { self.frame.opacity = 0 }
+        if self.settings != settings { uniformsDirty = true }
         self.settings = settings; self.editing = editing
         let maximum = max(10, view.window?.screen?.maximumFramesPerSecond ?? NSScreen.main?.maximumFramesPerSecond ?? 60)
         let rate = settings.frameRate == 0 ? maximum : min(maximum, max(10, settings.frameRate))
@@ -105,15 +122,15 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate, SpectrumRendering {
         drawCallbacks &+= 1
         guard let pass = view.currentRenderPassDescriptor, let drawable = view.currentDrawable,
               let command = queue.makeCommandBuffer(), let encoder = command.makeRenderCommandEncoder(descriptor:pass) else {
-            lastDrawFailure = "未取得 drawable / render pass / command encoder"; return
+            lastDrawFailure = L("未取得 drawable / render pass / command encoder"); return
         }
-        lastDrawFailure = "无"
+        lastDrawFailure = noDrawFailure
         submittedFrames &+= 1
         encodeBars(using: encoder, size: view.bounds.size)
         encoder.endEncoding(); command.present(drawable)
         command.addCompletedHandler { [weak self] completed in
             if let error = completed.error {
-                DispatchQueue.main.async { self?.lastDrawFailure = "GPU 执行失败：\(error.localizedDescription)" }
+                DispatchQueue.main.async { self?.lastDrawFailure = L("GPU 执行失败：%@", String(describing: error.localizedDescription)) }
             }
         }
         command.commit()
@@ -126,24 +143,29 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate, SpectrumRendering {
             // 2026-09-11: Peak state shares the render clock and the existing single GPU pass.
             let markers = settings.peakEnabled ? peaks.advance(bars: bars, time: ProcessInfo.processInfo.systemUptime, speed: settings.peakFallSpeed / 100) : bars
             let count = bars.count
-            let stereo = settings.channelMode == "stereo"
-            let length = settings.isVertical ? size.height : size.width
-            let centerGap = stereo ? min(settings.channelGap, max(0, length-Double(count))) : 0
-            let gap = min(settings.gap,max(0,(length-centerGap-Double(count))/Double(max(1,count-1))))
-            let first = settings.style == "gradient" ? settings.gradientColors[0] : settings.primaryColor
-            let last = settings.gradientColors[1]
-            var uniforms = [
-                SIMD4<Float>(Float(size.width),Float(size.height),Float(count),Float(gap)),
-                SIMD4<Float>(Float(settings.barOpacity),0,Float(settings.cornerRadius),settings.growthDirection == "down" ? 1:0),
-                SIMD4<Float>(settings.style == "gradient" ? 1 : (settings.style == "led" ? 2:0),Float(frame.opacity),Float(centerGap),stereo ? 1:0),
-                SIMD4<Float>(Float(first[0]),Float(first[1]),Float(first[2]),1),
-                SIMD4<Float>(Float(last[0]),Float(last[1]),Float(last[2]),1),
-                SIMD4<Float>(settings.stereoOrder == "lowOutside" ? 1 : (settings.stereoOrder == "lowInside" ? 2 : 0),
-                             settings.gradientDirection == "vertical" ? 1 : 0, settings.roundBase ? 1 : 0,
-                             ["up": Float(0), "down": 1, "right": 2, "left": 3][settings.growthDirection] ?? 0),
-                SIMD4<Float>(settings.peakEnabled ? 1:0, Float(settings.peakStyle == "line" ? 1:settings.peakThickness), settings.peakStyle == "rounded" ? 1:0, settings.peakCustomColor ? 1:0),
-                SIMD4<Float>(Float(settings.peakColor[0]),Float(settings.peakColor[1]),Float(settings.peakColor[2]),1)
-            ]
+            // 2026-09-11: Layout/style arithmetic is invariant until settings, canvas size or band count change.
+            if uniformsDirty || uniformSize != size || uniformCount != count {
+                let stereo = settings.channelMode == "stereo"
+                let length = settings.isVertical ? size.height : size.width
+                let centerGap = stereo ? min(settings.channelGap, max(0, length-Double(count))) : 0
+                let gap = min(settings.gap,max(0,(length-centerGap-Double(count))/Double(max(1,count-1))))
+                let first = settings.style == "gradient" ? settings.gradientColors[0] : settings.primaryColor
+                let last = settings.gradientColors[1]
+                uniforms = [
+                    SIMD4<Float>(Float(size.width),Float(size.height),Float(count),Float(gap)),
+                    SIMD4<Float>(Float(settings.barOpacity),0,Float(settings.cornerRadius),settings.growthDirection == "down" ? 1:0),
+                    SIMD4<Float>(settings.style == "gradient" ? 1 : (settings.style == "led" ? 2:0),Float(frame.opacity),Float(centerGap),stereo ? 1:0),
+                    SIMD4<Float>(Float(first[0]),Float(first[1]),Float(first[2]),1),
+                    SIMD4<Float>(Float(last[0]),Float(last[1]),Float(last[2]),1),
+                    SIMD4<Float>(settings.stereoOrder == "lowOutside" ? 1 : (settings.stereoOrder == "lowInside" ? 2 : 0),
+                                 settings.gradientDirection == "vertical" ? 1 : 0, settings.roundBase ? 1 : 0,
+                                 settings.growthDirection == "down" ? 1 : (settings.growthDirection == "right" ? 2 : (settings.growthDirection == "left" ? 3 : 0))),
+                    SIMD4<Float>(settings.peakEnabled ? 1:0, Float(settings.peakStyle == "line" ? 1:settings.peakThickness), settings.peakStyle == "rounded" ? 1:0, settings.peakCustomColor ? 1:0),
+                    SIMD4<Float>(Float(settings.peakColor[0]),Float(settings.peakColor[1]),Float(settings.peakColor[2]),1)
+                ]
+                uniformSize = size; uniformCount = count; uniformsDirty = false
+            }
+            uniforms[2].y = Float(frame.opacity)
             encoder.setRenderPipelineState(pipeline)
             bars.withUnsafeBytes { encoder.setFragmentBytes($0.baseAddress!,length:$0.count,index:0) }
             markers.withUnsafeBytes { encoder.setFragmentBytes($0.baseAddress!,length:$0.count,index:2) }

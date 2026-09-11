@@ -4,6 +4,10 @@ import CoreGraphics
 /// Schema 1 stores appearance and logical-point geometry, never audio or permission state.
 struct Settings: Codable, Equatable {
     var schemaVersion = 1
+    /// 2026-09-11: Persist language choice; system is resolved at launch.
+    var language = "system"
+    /// 2026-09-11: Persist explicit backend choice; old settings keep the performance branch layer default.
+    var rendererBackend = "coreAnimation"
     var advancedSettings = false
     // 2026-09-11: Additive defaults preserve existing appearance; zero FPS follows the display.
     var channelMode = "merged"
@@ -51,6 +55,8 @@ struct Settings: Codable, Equatable {
     func validated() -> Settings {
         var s = self
         s.schemaVersion = 1
+        if s.language != "system" && !AppLanguage.codes.contains(s.language) { s.language = "system" }
+        if !["coreAnimation", "metal"].contains(s.rendererBackend) { s.rendererBackend = "coreAnimation" }
         if !["merged", "stereo"].contains(s.channelMode) { s.channelMode = "merged" }
         if !["ascending", "lowOutside", "lowInside"].contains(s.stereoOrder) { s.stereoOrder = "ascending" }
         if !["horizontal", "vertical"].contains(s.gradientDirection) { s.gradientDirection = "horizontal" }

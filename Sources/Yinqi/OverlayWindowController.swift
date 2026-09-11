@@ -1,3 +1,4 @@
+// 2026-09-11: Route user-visible labels and messages through the process-selected localization resources.
 import AppKit
 
 /// Nonactivating overlay never becomes a keyboard target, including during mouse-only editing.
@@ -9,7 +10,8 @@ final class OverlayPanel: NSPanel {
 /// Owns public window policy, screen restoration, and logical-point editing geometry.
 final class OverlayWindowController {
     let panel: OverlayPanel
-    let renderer: any SpectrumRendering
+    private(set) var renderer: any SpectrumRendering
+    private(set) var usesLayers: Bool
     private let surface: EditingSurface
     var onQuickAction: ((String) -> Void)?
     private let toolbar = EditingToolbar()
@@ -26,6 +28,7 @@ final class OverlayWindowController {
     /// Retain the exact Stage A policy verified with a separate full-screen Chrome application.
     init(useLayers: Bool = false) throws {
         // 2026-09-11: Tests keep the Metal reference; the performance app can select the layer implementation.
+        usesLayers = useLayers
         renderer = useLayers ? LayerSpectrumRenderer() : try SpectrumRenderer()
         panel = OverlayPanel(contentRect:.zero,styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false)
         surface = EditingSurface(frame:.zero)
@@ -37,7 +40,7 @@ final class OverlayWindowController {
         panel.hidesOnDeactivate = false; panel.ignoresMouseEvents = true
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces,.canJoinAllApplications,.fullScreenAuxiliary]
-        panel.title = "Yinqi Spectrum"
+        panel.title = L("音栖 Yinqi") + " — " + L("频谱")
         panel.isReleasedWhenClosed = false
         panel.contentView = surface
         renderer.surfaceView.frame = surface.bounds
@@ -219,17 +222,17 @@ private final class EditingToolbar {
     /// Icon buttons have descriptive accessibility labels/tooltips and never appear in locked mode.
     init() {
         panel = OverlayPanel(contentRect:NSRect(x:0,y:0,width:336,height:38),styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false)
-        panel.title = "Yinqi 布局工具"
+        panel.title = L("Yinqi 布局工具")
         panel.level = .floating; panel.hidesOnDeactivate = false; panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces,.canJoinAllApplications,.fullScreenAuxiliary]
         panel.backgroundColor = .windowBackgroundColor
         let stack = NSStackView(frame:panel.contentView!.bounds)
         stack.orientation = .horizontal; stack.distribution = .fillEqually; stack.spacing = 2
         stack.autoresizingMask = [.width,.height]
-        let entries = [("center","scope","居中"),("fill","arrow.up.left.and.arrow.down.right","沿当前边铺满"),
-                       ("bottom","arrow.down.to.line","停靠底部"),("top","arrow.up.to.line","停靠顶部"),
-                       ("left","arrow.left.to.line","停靠左侧"),("right","arrow.right.to.line","停靠右侧"),
-                       ("lock","lock.fill","完成调整并锁定")]
+        let entries = [("center","scope",L("居中")),("fill","arrow.up.left.and.arrow.down.right",L("沿当前边铺满")),
+                       ("bottom","arrow.down.to.line",L("停靠底部")),("top","arrow.up.to.line",L("停靠顶部")),
+                       ("left","arrow.left.to.line",L("停靠左侧")),("right","arrow.right.to.line",L("停靠右侧")),
+                       ("lock","lock.fill",L("完成调整并锁定"))]
         for (action, symbol, label) in entries {
             let button = EditingActionButton(title:label,target:nil,action:nil)
             button.image = NSImage(systemSymbolName:symbol,accessibilityDescription:label)

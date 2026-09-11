@@ -1,3 +1,4 @@
+// 2026-09-11: Route user-visible labels and messages through the process-selected localization resources.
 import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
@@ -26,7 +27,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private var observers = [NSObjectProtocol]()
     private var renderTimer: DispatchSourceTimer?
     private var lastPaused = true
-    private var lastStatus = CaptureStatus(message:"尚未启用系统音频")
+    /// 2026-09-11: Track requests separately from the backend that this process initialized.
+    private var requestedRendererBackend = "coreAnimation"
+    private var requestedLanguage = "system"
+    private var restartPromptVisible = false
+    private var restartScheduled = false
+    private var lastStatus = CaptureStatus(message:L("尚未启用系统音频"))
 
     /// Launch with a privacy explanation and explicit enable action, retaining a menu control entry.
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -34,9 +40,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         applyActivationPolicy(store.value)
         let applicationMenu = NSMenu()
         let root = NSMenuItem(); let actions = NSMenu()
-        add("设置…", #selector(showSettings), to: actions).keyEquivalent = ","
-        add("运行诊断…", #selector(showDiagnostics), to: actions)
-        add("退出 Yinqi", #selector(quit), to: actions).keyEquivalent = "q"
+        add(L("设置…"), #selector(showSettings), to: actions).keyEquivalent = ","
+        add(L("运行诊断…"), #selector(showDiagnostics), to: actions)
+        add(L("退出 Yinqi"), #selector(quit), to: actions).keyEquivalent = "q"
         root.submenu = actions; applicationMenu.addItem(root); NSApp.mainMenu = applicationMenu
         item = NSStatusBar.system.statusItem(withLength:NSStatusItem.variableLength)
         // 2026-09-11: Replace the text glyph with a template so AppKit handles menu-bar contrast and highlighted states.
@@ -46,46 +52,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             image.isTemplate = true
             item.button?.image = image
             item.button?.title = ""
-            item.button?.toolTip = "音栖 Yinqi"
+            item.button?.toolTip = L("音栖 Yinqi")
         } else {
             item.button?.title = "▥"
         }
         let menu = NSMenu()
         menu.minimumWidth = 240
-        statusItem = NSMenuItem(title:"尚未启用",action:nil,keyEquivalent:""); menu.addItem(statusItem)
+        statusItem = NSMenuItem(title:L("尚未启用"),action:nil,keyEquivalent:""); menu.addItem(statusItem)
         // 2026-09-11: One checked command represents enable intent, including silence and temporary suspension.
         menu.delegate = self
-        spectrumItem = add("启用频谱", #selector(toggleSpectrum), to: menu)
-        editItem = add("调整位置与尺寸",#selector(toggleEditing),to:menu)
+        spectrumItem = add(L("启用频谱"), #selector(toggleSpectrum), to: menu)
+        editItem = add(L("调整位置与尺寸"),#selector(toggleEditing),to:menu)
         // 2026-09-11: Native submenu provides hover expansion and keyboard navigation without custom event handling.
-        let placementMenu = NSMenu(title: "停靠位置")
+        let placementMenu = NSMenu(title: L("停靠位置"))
         placementMenu.delegate = self
-        let placementRoot = NSMenuItem(title: "停靠位置", action: nil, keyEquivalent: "")
+        let placementRoot = NSMenuItem(title: L("停靠位置"), action: nil, keyEquivalent: "")
         placementRoot.submenu = placementMenu; menu.addItem(placementRoot)
-        for (key, title, action) in [("bottom", "底部", #selector(bottom)), ("top", "顶部", #selector(top)),
-                                      ("left", "左侧", #selector(left)), ("right", "右侧", #selector(right))] {
+        for (key, title, action) in [("bottom", L("底部"), #selector(bottom)), ("top", L("顶部"), #selector(top)),
+                                      ("left", L("左侧"), #selector(left)), ("right", L("右侧"), #selector(right))] {
             placementItems[key] = add(title, action, to: placementMenu)
         }
         placementMenu.addItem(.separator())
-        add("重置到当前可见屏幕",#selector(resetPosition),to:placementMenu)
+        add(L("重置到当前可见屏幕"),#selector(resetPosition),to:placementMenu)
         menu.addItem(.separator())
-        add("设置…",#selector(showSettings),to:menu)
-        add("诊断…",#selector(showDiagnostics),to:menu)
-        add("重新尝试音频采集",#selector(retry),to:menu)
-        add("退出 Yinqi",#selector(quit),to:menu)
+        add(L("设置…"),#selector(showSettings),to:menu)
+        add(L("诊断…"),#selector(showDiagnostics),to:menu)
+        add(L("重新尝试音频采集"),#selector(retry),to:menu)
+        add(L("退出 Yinqi"),#selector(quit),to:menu)
         item.menu = menu
         do {
-            overlay = try OverlayWindowController(useLayers: ProcessInfo.processInfo.environment["YINQI_RENDERER"] != "metal")
+            overlay = try OverlayWindowController(useLayers: store.value.rendererBackend != "metal")
             overlay?.apply(store.value)
             overlay?.renderer.frameProvider = { [weak self] in self?.capture.frames.snapshot() }
             overlay?.onQuickAction = { [weak self] action in self?.quickLayout(action) }
             overlay?.onFrameChanged = { [weak self] frame,snap in self?.saveFrame(frame,snap:snap) }
-        } catch { lastStatus = CaptureStatus(message:"Metal 初始化失败：\(error.localizedDescription)", isError: true) }
+        } catch { lastStatus = CaptureStatus(message:L("Metal 初始化失败：%@", String(describing: error.localizedDescription)), isError: true) }
+        store.activeLanguageChoice = store.value.language
+        requestedLanguage = store.value.language
+        store.activeRendererBackend = store.value.rendererBackend
+        requestedRendererBackend = store.value.rendererBackend
         renderSettings = store.value.validated()
         capture.configure(store.value)
         capture.onStatus = { [weak self] status in self?.lastStatus = status; self?.updateDiagnostics() }
         store.onChange = { [weak self] value in
             guard let self else { return }
+            // 2026-09-11: Never construct another backend in this process; defer the choice until relaunch.
+            if self.requestedRendererBackend != value.rendererBackend || self.requestedLanguage != value.language {
+                self.requestedRendererBackend = value.rendererBackend
+                self.requestedLanguage = value.language
+                DispatchQueue.main.async { [weak self] in self?.promptForRendererRestart() }
+            }
             self.renderSettings = value
             self.applyActivationPolicy(value)
             self.capture.configure(value); self.overlay?.apply(value); self.refreshRenderer()
@@ -102,7 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     /// Build a normal focusable window with direct controls; only the overlay remains nonactivating.
     private func makeDiagnostics() {
         diagnostics = NSWindow(contentRect:NSRect(x:200,y:220,width:700,height:360),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
-        diagnostics.title = "Yinqi — 运行诊断"
+        diagnostics.title = L("Yinqi — 运行诊断")
         diagnostics.isReleasedWhenClosed = false
         diagnostics.delegate = self
         let content = NSView(frame:diagnostics.contentView!.bounds)
@@ -110,7 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         text.autoresizingMask = [.width,.height]; text.isEditable = false
         text.font = .monospacedSystemFont(ofSize:13,weight:.regular)
         text.textContainerInset = NSSize(width:16,height:16); content.addSubview(text)
-        for (index,entry) in [("启用系统音频",#selector(enable)),("停止",#selector(hide)),("调整 / 锁定",#selector(toggleEditing)),("设置",#selector(showSettings)),("退出",#selector(quit))].enumerated() {
+        for (index,entry) in [(L("启用系统音频"),#selector(enable)),(L("停止"),#selector(hide)),(L("调整 / 锁定"),#selector(toggleEditing)),(L("设置"),#selector(showSettings)),(L("退出"),#selector(quit))].enumerated() {
             let button = NSButton(title:entry.0,target:self,action:entry.1)
             button.frame = NSRect(x:16+index*132,y:10,width:124,height:30); content.addSubview(button)
         }
@@ -151,7 +167,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         mode = .hidden; overlay?.editing = false
         if store.value.spectrumEnabled { store.value.spectrumEnabled = false }
         overlay?.hide(); capture.stop(); stopRenderPolling()
-        editItem.title = "调整位置与尺寸"; updateDiagnostics()
+        editItem.title = L("调整位置与尺寸"); updateDiagnostics()
     }
 
     /// Manual retries first dispose of all previous HAL resources, then honor current user intent.
@@ -165,7 +181,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         if mode == .hidden { enable() }
         mode = mode == .editing ? .locked : .editing
         overlay?.editing = mode == .editing
-        editItem.title = mode == .editing ? "完成调整" : "调整位置与尺寸"
+        editItem.title = mode == .editing ? L("完成调整") : L("调整位置与尺寸")
         if mode == .locked { store.saveNow() }
         refreshRenderer()
     }
@@ -222,10 +238,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         if settingsWindow == nil {
             let window=NSWindow(contentRect:NSRect(x:260,y:160,width:681,height:560),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
             window.delegate = self
-            window.title="Yinqi 设置"; window.isReleasedWhenClosed=false
+            window.title=L("Yinqi 设置"); window.isReleasedWhenClosed=false
             // 2026-09-11: A compact default with a minimum size keeps numeric columns readable during resize.
             window.contentMinSize = NSSize(width:681,height:400)
-            window.contentView=NSHostingView(rootView:SettingsView(store:store, showDiagnostics: { [weak self] in self?.showDiagnostics() }, enableSpectrum: { [weak self] in self?.enable() }, hideSpectrum: { [weak self] in self?.hide() }, editSpectrum: { [weak self] in self?.toggleEditing() }, importSettings: { [weak self] in self?.importSettings() }, exportSettings: { [weak self] in self?.exportSettings() }, quickLayout: { [weak self] action in self?.quickLayout(action) })); settingsWindow=window
+            window.contentView=NSHostingView(rootView:SettingsView(store:store, showDiagnostics: { [weak self] in self?.showDiagnostics() }, enableSpectrum: { [weak self] in self?.enable() }, hideSpectrum: { [weak self] in self?.hide() }, editSpectrum: { [weak self] in self?.toggleEditing() }, importSettings: { [weak self] in self?.importSettings() }, exportSettings: { [weak self] in self?.exportSettings() }, restartApplication: { [weak self] in self?.restartApplication() }, quickLayout: { [weak self] action in self?.quickLayout(action) })); settingsWindow=window
         }
         NSApp.activate(ignoringOtherApps:true); settingsWindow?.makeKeyAndOrderFront(nil)
     }
@@ -239,8 +255,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             guard let self, result == .OK, let url = panel.url else { return }
             do {
                 try self.store.exportData().write(to: url, options: .atomic)
-                self.store.transferMessage = "设置已导出。"
-            } catch { self.store.transferMessage = "导出失败：" + error.localizedDescription }
+                self.store.transferMessage = L("设置已导出。")
+            } catch { self.store.transferMessage = L("导出失败：") + error.localizedDescription }
         }
     }
 
@@ -255,8 +271,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
                 let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
                 guard size <= 1_048_576 else { throw CocoaError(.fileReadTooLarge) }
                 try self.store.importData(Data(contentsOf: url))
-                self.store.transferMessage = "设置已导入并应用。"
-            } catch { self.store.transferMessage = "导入失败，原设置已保留：" + error.localizedDescription }
+                self.store.transferMessage = L("设置已导入；语言或渲染方式变更需重启。")
+            } catch { self.store.transferMessage = L("导入失败，原设置已保留：") + error.localizedDescription }
         }
     }
 
@@ -292,14 +308,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private func updateDiagnostics() {
         let f=capture.frames.snapshot()
         // 2026-09-11: Fixed short states keep diagnostics out of the menu and avoid width changes.
-        if mode == .hidden { statusItem.title = "频谱已关闭" }
-        else if !suspended.isEmpty { statusItem.title = "频谱已暂停" }
-        else if lastStatus.isError { statusItem.title = "采集异常：查看诊断" }
-        else if f.opacity == 0 { statusItem.title = "等待声音" }
-        else { statusItem.title = "频谱运行中" }
+        if mode == .hidden { statusItem.title = L("频谱已关闭") }
+        else if !suspended.isEmpty { statusItem.title = L("频谱已暂停") }
+        else if lastStatus.isError { statusItem.title = L("采集异常：查看诊断") }
+        else if f.opacity == 0 { statusItem.title = L("等待声音") }
+        else { statusItem.title = L("频谱运行中") }
         // 2026-09-11: No diagnostic string allocation or UI refresh while its window is closed.
         guard diagnostics?.isVisible == true else { return }
-        text.string="仅在本机分析系统播放音频，不保存或上传声音。\n请点击启用系统音频；拒绝后请在系统设置检查权限，再手动重试。\n\n状态：\(lastStatus.message)\n采样率：\(lastStatus.sampleRate) Hz；通道：\(lastStatus.channels)\nIO 回调：\(lastStatus.callbacks)；丢弃帧：\(lastStatus.dropped)\nRMS：\(String(format:"%.2f",lastStatus.rmsDB)) dBFS；Peak：\(lastStatus.peak)\n分析序号：\(f.sequence)；\(store.value.barCount) 柱；GPU 连续绘制暂停：\(overlay?.renderer.isPaused ?? true)\n频段峰值：\(f.bands.max() ?? 0)；淡出系数：\(f.opacity)\n绘制回调：\(overlay?.renderer.drawCallbacks ?? 0)；提交帧：\(overlay?.renderer.submittedFrames ?? 0)\n画布：\(overlay?.renderer.surfaceView.bounds.size ?? .zero)；窗口可见：\(overlay?.panel.isVisible ?? false)\n绘制状态：\(overlay?.renderer.lastDrawFailure ?? "无渲染器")\n\n\(store.warning ?? "窗口全屏兼容与设备恢复范围见测试报告。")"
+        text.string=L("仅在本机分析系统播放音频，不保存或上传声音。\n请点击启用系统音频；拒绝后请在系统设置检查权限，再手动重试。\n\n状态：%@\n采样率：%@ Hz；通道：%@\nIO 回调：%@；丢弃帧：%@\nRMS：%@ dBFS；Peak：%@\n分析序号：%@；%@ 柱；GPU 连续绘制暂停：%@\n频段峰值：%@；淡出系数：%@\n绘制回调：%@；提交帧：%@\n画布：%@；窗口可见：%@\n绘制状态：%@\n\n%@", String(describing: lastStatus.message), String(describing: lastStatus.sampleRate), String(describing: lastStatus.channels), String(describing: lastStatus.callbacks), String(describing: lastStatus.dropped), String(describing: String(format:"%.2f",lastStatus.rmsDB)), String(describing: lastStatus.peak), String(describing: f.sequence), String(describing: store.value.barCount), String(describing: overlay?.renderer.isPaused ?? true), String(describing: f.bands.max() ?? 0), String(describing: f.opacity), String(describing: overlay?.renderer.drawCallbacks ?? 0), String(describing: overlay?.renderer.submittedFrames ?? 0), String(describing: overlay?.renderer.surfaceView.bounds.size ?? .zero), String(describing: overlay?.panel.isVisible ?? false), String(describing: overlay?.renderer.lastDrawFailure ?? L("无渲染器")), String(describing: store.warning ?? L("窗口全屏兼容与设备恢复范围见测试报告。")))
     }
 
     /// 2026-09-11: A 10 Hz wake check replaces duplicate 60 Hz polling; drawing reads fresh frames directly.
@@ -343,17 +359,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         }
     }
 
+    /// 2026-09-11: Offer a deferred restart only while the saved choice differs from this process.
+    private func promptForRendererRestart() {
+        guard store.restartRequired, !restartPromptVisible, !restartScheduled else { return }
+        restartPromptVisible = true
+        defer { restartPromptVisible = false }
+        let alert = NSAlert()
+        alert.messageText = L("更改语言或渲染方式需要重启 Yinqi")
+        alert.informativeText = L("当前设置会保存，新的语言或渲染方式将在重启后生效。")
+        alert.addButton(withTitle: L("立即重启"))
+        alert.addButton(withTitle: L("稍后重启"))
+        if alert.runModal() == .alertFirstButtonReturn { restartApplication() }
+    }
+
+    /// 2026-09-11: Persist first, then let a helper wait for full process exit before launching the same app.
+    private func restartApplication() {
+        guard !restartScheduled else { return }
+        NSApp.keyWindow?.makeFirstResponder(nil)
+        guard store.saveNow() else {
+            let alert = NSAlert(); alert.messageText = L("无法重启"); alert.informativeText = store.warning ?? L("设置保存失败")
+            alert.runModal(); return
+        }
+        do {
+            try ApplicationRelauncher.schedule(bundleURL: Bundle.main.bundleURL, processID: ProcessInfo.processInfo.processIdentifier)
+            restartScheduled = true
+            NSApp.terminate(nil)
+        } catch {
+            let alert = NSAlert(); alert.messageText = L("无法自动重启")
+            alert.informativeText = L("设置已保存，可退出后重新打开应用。") + error.localizedDescription
+            alert.runModal()
+        }
+    }
+
     /// Flush settings and stop HAL resources before AppKit terminates the process.
     @objc private func quit() { NSApp.terminate(nil) }
 
     /// A single asynchronous termination path prevents callback context from outliving its owner.
     func applicationShouldTerminate(_ sender:NSApplication)->NSApplication.TerminateReply {
-        mode = .hidden; stopRenderPolling(); store.saveNow()
+        mode = .hidden; stopRenderPolling(); overlay?.renderer.shutdown(); store.saveNow()
         capture.stop { NSApp.reply(toApplicationShouldTerminate:true) }
         return .terminateLater
     }
 }
 
+// 2026-09-11: Select locale before AppKit caches its language.
+Localization.bootstrap(choice: SettingsStore().value.language)
 let app=NSApplication.shared
 let delegate=AppDelegate()
 app.delegate=delegate

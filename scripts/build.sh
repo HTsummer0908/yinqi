@@ -20,6 +20,8 @@ DEVELOPER_DIR="$icon_developer_dir" xcrun actool Resources/Branding/v2/Yinqi.ico
     --minimum-deployment-target 26.0 --app-icon Yinqi \
     --output-partial-info-plist build/icon-info.plist
 cp Resources/Branding/v2/menu/YinqiMenuTemplate.pdf build/Yinqi.app/Contents/Resources/
+# 2026-09-11: Include UI and localized app-name/permission resources in the signed bundle.
+for locale in Resources/*.lproj; do ditto "$locale" "build/Yinqi.app/Contents/Resources/$(basename "$locale")"; done
 cp Resources/Info.plist build/Yinqi.app/Contents/Info.plist
 # Merge generated icon metadata rather than maintaining compiler output keys manually.
 /usr/libexec/PlistBuddy -c "Merge build/icon-info.plist" build/Yinqi.app/Contents/Info.plist

@@ -7,6 +7,7 @@ import CoreGraphics
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let source = SettingsStore(url: directory.appendingPathComponent("source.json"))
+        source.value.rendererBackend = "metal"
         source.value.hideInScreenshots = true
         source.value.peakFallSpeed = 14; source.value.frequencyMax = 12000
         source.value.screenHint = "other-display"; source.value.spectrumEnabled = false
@@ -18,6 +19,7 @@ import CoreGraphics
         let destination = SettingsStore(url: destinationURL)
         destination.value.hasLaunched = true; destination.value.spectrumEnabled = true
         try destination.importData(data)
+        assert(destination.value.rendererBackend == "metal")
         assert(destination.value.hideInScreenshots)
         assert(destination.value.peakFallSpeed == 14 && destination.value.frequencyMax == 12000)
         assert(destination.value.hasLaunched && destination.value.spectrumEnabled && destination.value.screenHint.isEmpty)
@@ -37,9 +39,30 @@ import CoreGraphics
         print("PASS: portable configuration round trip, runtime preservation, invalid import and write failure rollback")
     }
 
+    /// 2026-09-11: Unknown imported backends must never select an unsupported renderer.
+    static func tryInvalidBackendDefaults() -> Bool {
+        (try? Settings.decode(Data("{\"rendererBackend\":\"unknown\"}".utf8)).rendererBackend) == "coreAnimation"
+    }
+
     /// Exercise missing fields, unknown keys, corruption, bounds, and a negative-coordinate screen.
     static func main() throws {
         try portableConfiguration()
+        // 2026-09-11: Pending choice persists while active backend remains fixed; reverting cancels restart.
+        let restartURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathComponent("settings.json")
+        defer { try? FileManager.default.removeItem(at: restartURL.deletingLastPathComponent()) }
+        let restartStore = SettingsStore(url:restartURL)
+        restartStore.activeRendererBackend = "coreAnimation"
+        assert(!restartStore.rendererRestartRequired)
+        restartStore.value.rendererBackend = "metal"
+        assert(restartStore.rendererRestartRequired && restartStore.activeRendererBackend == "coreAnimation")
+        assert(restartStore.saveNow())
+        let relaunched = SettingsStore(url:restartURL)
+        relaunched.activeRendererBackend = relaunched.value.rendererBackend
+        assert(relaunched.value.rendererBackend == "metal" && !relaunched.rendererRestartRequired)
+        restartStore.value.rendererBackend = "coreAnimation"
+        assert(!restartStore.rendererRestartRequired)
+        let blockedRestart = SettingsStore(url:restartURL.appendingPathComponent("child.json"))
+        assert(!blockedRestart.saveNow())
 
         // 2026-09-11: Advanced UI mode must persist without quantizing existing custom values.
         var detailed = Settings(); detailed.advancedSettings = true; detailed.peakFallSpeed = 14; detailed.releaseMs = 289
@@ -50,6 +73,8 @@ import CoreGraphics
         assert(!simpleReload.advancedSettings && simpleReload.releaseMs == 289 && simpleReload.peakFallSpeed == 14)
         let defaultMode = try Settings.decode(Data("{}".utf8))
         // 2026-09-11: Existing configurations remain capturable until the user explicitly enables exclusion.
+        assert(defaultMode.rendererBackend == "coreAnimation")
+        assert(tryInvalidBackendDefaults())
         assert(!defaultMode.hideInScreenshots)
         assert(!defaultMode.advancedSettings)
         // 2026-09-11: Verify custom migration, unlimited restoration, presets and persisted mode.

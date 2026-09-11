@@ -1,0 +1,3 @@
+"CFBundleDisplayName" = "Yinqi";
+"CFBundleName" = "Yinqi";
+"NSAudioCaptureUsageDescription" = "System audio is analyzed locally. Audio is never saved or uploaded.";

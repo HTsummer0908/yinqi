@@ -1,3 +1,4 @@
+// 2026-09-11: Route user-visible labels and messages through the process-selected localization resources.
 import Foundation
 import Combine
 
@@ -9,6 +10,16 @@ final class SettingsStore: ObservableObject {
     @Published var warning: String?
     /// 2026-09-11: Report explicit import/export results in About without persistent logging.
     @Published var transferMessage: String?
+    /// 2026-09-11: Runtime backend remains fixed until process exit; it is never exported.
+    @Published var activeRendererBackend: String?
+    /// 2026-09-11: A reverted choice cancels the pending restart without touching the current renderer.
+    var rendererRestartRequired: Bool {
+        activeRendererBackend.map { $0 != value.validated().rendererBackend } ?? false
+    }
+    /// 2026-09-11: Language changes apply in a fresh process, like renderer changes.
+    @Published var activeLanguageChoice: String?
+    var languageRestartRequired: Bool { activeLanguageChoice.map { $0 != value.language } ?? false }
+    var restartRequired: Bool { rendererRestartRequired || languageRestartRequired }
     var onChange: ((Settings) -> Void)?
     private let url: URL
     private var pending: DispatchWorkItem?
@@ -28,14 +39,14 @@ final class SettingsStore: ObservableObject {
                     _ = try Settings.decode(data)
                     try FileManager.default.createDirectory(at: self.url.deletingLastPathComponent(), withIntermediateDirectories: true)
                     try data.write(to: self.url, options: .atomic)
-                } catch { migrationWarning = "旧版设置迁移失败：\(error.localizedDescription)" }
+                } catch { migrationWarning = L("旧版设置迁移失败：%@", String(describing: error.localizedDescription)) }
             }
         }
         value = Settings()
         warning = migrationWarning
         if FileManager.default.fileExists(atPath:self.url.path) {
             do { value = try Settings.decode(Data(contentsOf:self.url)) }
-            catch { warning = "设置文件损坏，已恢复默认值：\(error.localizedDescription)" }
+            catch { warning = L("设置文件损坏，已恢复默认值：%@", String(describing: error.localizedDescription)) }
         }
     }
 
@@ -75,13 +86,15 @@ final class SettingsStore: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline:.now()+0.3,execute:work)
     }
 
-    /// Foundation atomic writing creates a temporary sibling then replaces the destination.
-    func saveNow() {
+    /// 2026-09-11: Report atomic-save success so restart never proceeds after a failed write.
+    @discardableResult
+    func saveNow() -> Bool {
         pending?.cancel(); pending = nil
         do {
             try FileManager.default.createDirectory(at:url.deletingLastPathComponent(),withIntermediateDirectories:true)
             let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted,.sortedKeys]
             try encoder.encode(value.validated()).write(to:url,options:.atomic)
-        } catch { warning = "设置保存失败：\(error.localizedDescription)" }
+            return true
+        } catch { warning = L("设置保存失败：%@", String(describing: error.localizedDescription)); return false }
     }
 }

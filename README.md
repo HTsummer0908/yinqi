@@ -2,7 +2,7 @@
 
 让声音栖于桌面。轻量的原生 macOS 系统音频频谱工具。
 
-**版本：1.0.0** · 仓库目前为私有，公开将在单独确认后进行。
+**版本：1.0.1 · build 32** · 仓库目前为私有，公开将在单独确认后进行。
 
 ## 功能
 
@@ -20,21 +20,21 @@
 部署目标为 **macOS 26.0+**，当前构建产物仅支持 **Apple Silicon（arm64）**。
 已验证开发环境：Apple M4、macOS 27.0 Beta（26A428）。macOS 26 和 Intel 尚未验证，不提供 Intel 安装包。
 
-从仓库 Releases 下载 `Yinqi-1.0.0-arm64.zip`，解压后可将 `Yinqi.app` 放入“应用程序”，双击启动。
+从仓库 Releases 下载 `Yinqi-1.0.1-arm64.zip`，解压后可将 `Yinqi.app` 放入“应用程序”，双击启动。
 当前包使用 **ad-hoc 签名，未进行 Developer ID 签名与 Apple 公证**；其他电脑可能遇到 Gatekeeper 拦截，尚未验证跨机安装流程。校验 SHA-256 只能验证文件一致性，不替代开发者签名。
 
 首次启动在设置中开启“启用频谱”，按系统提示允许系统音频访问，然后从其他应用播放声音。关闭设置窗口不会退出应用；菜单栏可重新打开设置。
 
 ## 使用
 
-- **常规**：启用频谱、Dock 显示、截图隐藏，以及上/下/左/右四边铺满。
+- **常规**：语言、启用频谱、Dock 显示、截图隐藏，以及上/下/左/右四边铺满。
 - **频谱**：声道、柱数、频率排列与间距；独立的“频率范围”分组中，向右拖动表示缩减更多。
-- **动画**：帧率、音量灵敏度（−24～+24 dB）、回落速度。
+- **动画**：渲染方式、帧率、音量灵敏度（−24～+24 dB）、回落速度。
 - **外观**：柱条样式、颜色和峰值标记；关闭峰值标记时隐藏其配置。
 - **位置**：停靠、生长方向、边缘间距与编辑开关。编辑时可拖动主体、四边与四角，完成后锁定恢复穿透。
 - **关于**：高级设置、项目信息和配置导入导出。info 图标悬停 800 ms 展示说明。
 
-导出的 JSON 包含版本标识及设置，不包含原电脑屏幕标识、启动记录和频谱启停状态。导入后立即应用；非法文件或保存失败保留原设置。
+导出的 JSON 包含版本标识及设置，不包含原电脑屏幕标识、启动记录和频谱启停状态。导入后应用外观等设置；语言或渲染方式变更需重启。非法文件或保存失败保留原设置。
 
 设置文件：`~/Library/Application Support/local.xinfei.yinqi/settings.json`。旧版设置可自动迁移；不会删除旧文件或覆盖已有新设置。
 
@@ -61,7 +61,19 @@ ICON_DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer" bash scripts/bui
 
 ```sh
 bash scripts/test-rendering.sh
+bash scripts/test-localization.sh
+bash scripts/test-termination.sh
 ```
+
+## 界面语言与应用名称
+
+“常规 → 语言”提供跟随系统、简体中文、繁體中文（港澳）、繁體中文（台灣）、English、Français、Deutsch、日本語和 한국어。初始及旧配置默认跟随系统的语言偏好列表，匹配首个支持的语言；无匹配时使用英文。港澳繁体与台湾繁体分别提供资源。
+
+手动选择或导入语言设置后需重启，使用现有“立即重启 / 稍后重启”流程；不更改系统全局语言。配置导入导出包含语言选择。
+
+安装包统一保留 `Yinqi.app`。中文显示名称为“音栖 / 音棲”，其余语言显示“Yinqi”。Finder 等系统位置依系统的本地化规则显示名称，不保证应用内更改语言立即刷新 Finder 的名称或缓存。
+
+翻译资源位于 `Resources/<语言>.lproj/Localizable.strings`，名称和权限说明位于同目录 `InfoPlist.strings`。译文须保留 `%@` 参数；新增语言需同时注册 `AppLanguage.codes`、原文名称及 `CFBundleLocalizations`。构建后运行 `bash scripts/test-localization.sh` 检查覆盖、格式与原生 Bundle 行为。详细记录见 [多语言验证报告](docs/testing/RESULTS-1.0.1-languages.md)。
 
 ## 隐私与兼容范围
 
@@ -69,7 +81,7 @@ bash scripts/test-rendering.sh
 
 截图隐藏使用 AppKit 的窗口共享属性，用户已确认当前环境截图生效；不承诺录屏排除。帧率受屏幕和系统调度限制，目标数值不代表实际性能保证。
 
-详见 [1.0.0 验证记录](docs/testing/RESULTS-1.0.0.md) 和 [发布说明](docs/releases/1.0.0.md)。历史测试与设计见 [0.3 测试报告](docs/testing/RESULTS-0.3.md)、[设计文档](2026-09-11-macos-spectrum-functional-architecture.md)。
+当前版本见 [1.0.1 发布说明](docs/releases/1.0.1.md) 和 [多语言验证记录](docs/testing/RESULTS-1.0.1-languages.md)。此前版本见 [1.0.0 验证记录](docs/testing/RESULTS-1.0.0.md) 和 [发布说明](docs/releases/1.0.0.md)。历史测试与设计见 [0.3 测试报告](docs/testing/RESULTS-0.3.md)、[设计文档](2026-09-11-macos-spectrum-functional-architecture.md)。
 
 ## 开发与项目状态
 
@@ -80,6 +92,8 @@ bash scripts/test-rendering.sh
 
 开源许可证待确认；私有准备阶段不授予额外开源许可。公开仓库前应完成许可证与分发方式确认。
 
-## 性能分支实验版
+## 渲染方式与性能
 
-本分支增加 Core Animation 后端，实验包为 1.0.1 build 28（perf2），不属于正式 1.0.0 Release。默认使用图层渲染；以 `YINQI_RENDERER=metal build/Yinqi.app/Contents/MacOS/Yinqi` 启动可对照 Metal。测量和未验证项见 [perf2 报告](docs/performance/2026-09-11-perf2-layers.md)。
+1.0.1 已整合性能分支与多语言功能。在“设置 → 动画 → 渲染方式”中选择 Core Animation 或 Metal，更改后提示“立即重启 / 稍后重启”，选择会保存并随配置导入导出。默认 Core Animation；原环境变量切换入口已由设置替代。重启前继续使用当前后端；新进程按保存的选择初始化，避免进程内热切换残留。
+
+运行 `bash scripts/build.sh` 生成 `build/Yinqi.app`。发布包为 `dist/Yinqi-1.0.1-arm64.zip`。本次退出阻塞修复见 [perf5 报告](docs/performance/2026-09-11-perf5-termination.md)，重启机制见 [perf4 报告](docs/performance/2026-09-11-perf4-restart.md)，此前切换内存测量见 [perf3 报告](docs/performance/2026-09-11-perf3-switching.md)，此前的后端对照见 [perf2 报告](docs/performance/2026-09-11-perf2-layers.md)。

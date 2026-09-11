@@ -1,3 +1,4 @@
+// 2026-09-11: Route user-visible labels and messages through the process-selected localization resources.
 import AppKit
 import QuartzCore
 
@@ -7,7 +8,7 @@ final class LayerSpectrumRenderer: SpectrumRendering {
     private(set) var isPaused = true
     private(set) var drawCallbacks: UInt64 = 0
     private(set) var submittedFrames: UInt64 = 0
-    private(set) var lastDrawFailure = "无"
+    private(set) var lastDrawFailure = L("无")
     var frameProvider: (() -> SpectrumFrame?)?
     private var settings = Settings()
     private var frame = SpectrumFrame(bands: [], rmsDB: -160, timestamp: 0, sequence: 0, opacity: 0)
@@ -33,6 +34,12 @@ final class LayerSpectrumRenderer: SpectrumRendering {
         surfaceView.layer?.addSublayer(caps)
     }
     deinit { timer?.invalidate() }
+
+    /// 2026-09-11: Explicit teardown prevents an old backend timer from surviving a live switch.
+    func shutdown() {
+        timer?.invalidate(); timer = nil; frameProvider = nil; isPaused = true
+        surfaceView.layer?.opacity = 0
+    }
 
     /// 2026-09-11: Match Metal's wake/clear policy and invalidate animation when band identities change.
     func update(_ frame: SpectrumFrame, settings: Settings, editing: Bool, hidden: Bool) {

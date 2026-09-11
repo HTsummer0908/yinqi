@@ -1,0 +1,3 @@
+"CFBundleDisplayName" = "Yinqi";
+"CFBundleName" = "Yinqi";
+"NSAudioCaptureUsageDescription" = "システムの再生音声をこのMac上で解析します。音声は保存・アップロードしません。";
