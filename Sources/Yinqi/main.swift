@@ -30,7 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let root = NSMenuItem(); let actions = NSMenu()
         add("设置…", #selector(showSettings), to: actions).keyEquivalent = ","
         add("运行诊断…", #selector(showDiagnostics), to: actions)
-        add("退出 Soundbar", #selector(quit), to: actions).keyEquivalent = "q"
+        add("退出 Yinqi", #selector(quit), to: actions).keyEquivalent = "q"
         root.submenu = actions; applicationMenu.addItem(root); NSApp.mainMenu = applicationMenu
         item = NSStatusBar.system.statusItem(withLength:NSStatusItem.variableLength)
         // 2026-09-11: Replace the text glyph with a template so AppKit handles menu-bar contrast and highlighted states.
@@ -58,7 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add("设置…",#selector(showSettings),to:menu)
         add("诊断…",#selector(showDiagnostics),to:menu)
         add("重新尝试音频采集",#selector(retry),to:menu)
-        add("退出 Soundbar",#selector(quit),to:menu)
+        add("退出 Yinqi",#selector(quit),to:menu)
         item.menu = menu
         do {
             overlay = try OverlayWindowController()
@@ -86,7 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Build a normal focusable window with direct controls; only the overlay remains nonactivating.
     private func makeDiagnostics() {
         diagnostics = NSWindow(contentRect:NSRect(x:200,y:220,width:700,height:360),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
-        diagnostics.title = "Soundbar — 运行诊断"
+        diagnostics.title = "Yinqi — 运行诊断"
         diagnostics.isReleasedWhenClosed = false
         let content = NSView(frame:diagnostics.contentView!.bounds)
         text = NSTextView(frame:NSRect(x:0,y:48,width:700,height:312))
@@ -186,7 +186,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func showSettings() {
         if settingsWindow == nil {
             let window=NSWindow(contentRect:NSRect(x:260,y:160,width:681,height:560),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
-            window.title="Soundbar 设置"; window.isReleasedWhenClosed=false
+            window.title="Yinqi 设置"; window.isReleasedWhenClosed=false
             // 2026-09-11: A compact default with a minimum size keeps numeric columns readable during resize.
             window.contentMinSize = NSSize(width:681,height:400)
             window.contentView=NSHostingView(rootView:SettingsView(store:store, showDiagnostics: { [weak self] in self?.showDiagnostics() }, enableSpectrum: { [weak self] in self?.enable() }, hideSpectrum: { [weak self] in self?.hide() }, editSpectrum: { [weak self] in self?.toggleEditing() }, quickLayout: { [weak self] action in self?.quickLayout(action) })); settingsWindow=window

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>CFBundleIdentifier</key><string>local.xinfei.soundbar</string>
-<key>CFBundleName</key><string>Soundbar</string>
-<key>CFBundleExecutable</key><string>Soundbar</string>
+<key>CFBundleIdentifier</key><string>local.xinfei.yinqi</string>
+<key>CFBundleName</key><string>Yinqi</string>
+<key>CFBundleExecutable</key><string>Yinqi</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.3.7</string>
-<key>CFBundleVersion</key><string>10</string>
+<key>CFBundleShortVersionString</key><string>0.3.8</string>
+<key>CFBundleVersion</key><string>11</string>
 <key>LSMinimumSystemVersion</key><string>26.0</string>
 <key>LSUIElement</key><true/>
 <key>NSAudioCaptureUsageDescription</key><string>仅在本机分析系统播放音频以显示频谱，不保存或上传声音。</string>

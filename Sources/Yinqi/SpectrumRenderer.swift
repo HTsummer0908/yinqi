@@ -19,7 +19,7 @@ final class SpectrumRenderer: NSObject, MTKViewDelegate {
     /// Compile the embedded Metal source once, allowing a CLT-only build without metal CLI tools.
     init(frame initialFrame: CGRect = .zero) throws {
         guard let device = MTLCreateSystemDefaultDevice(), let queue = device.makeCommandQueue() else {
-            throw NSError(domain: "Soundbar.Metal", code: 1, userInfo: [NSLocalizedDescriptionKey:"Metal 设备不可用"])
+            throw NSError(domain: "Yinqi.Metal", code: 1, userInfo: [NSLocalizedDescriptionKey:"Metal 设备不可用"])
         }
         self.queue = queue
         view = MTKView(frame: initialFrame, device: device)

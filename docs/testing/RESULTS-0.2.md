@@ -1,4 +1,4 @@
-# Soundbar 0.2.0 功能回归（2026-09-11）
+# Yinqi 0.2.0 功能回归（2026-09-11）
 
 本报告对应本次功能升级；旧阶段A/B/C结论及硬件兼容边界仍见 RESULTS.md，不将旧版实机结果当作新版全量验收。用户要求暂缓正式性能测试。
 
@@ -10,7 +10,7 @@ Apple M4 / macOS27.0，Command Line Tools Swift6.4，Swift5语言模式，arm64 
 ./scripts/test.sh
 ./scripts/test-rendering.sh
 ./scripts/build.sh
-open build/Soundbar.app
+open build/Yinqi.app
 ```
 
 三条验证/构建脚本全部退出0，ad-hoc签名校验通过。版本0.2.0 / build2。

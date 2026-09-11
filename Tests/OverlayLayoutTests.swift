@@ -15,7 +15,7 @@ import MetalKit
         assert(view.frame.size == overlay.panel.contentView!.bounds.size, "Metal view must fill its host")
         assert(view.drawableSize.width > 0 && view.drawableSize.height > 0)
         assert(view.layer!.contentsScale > 0, "A zero CAMetalLayer contentsScale makes submitted frames invisible")
-        overlay.panel.title = "Soundbar 独立渲染测试（合成测试数据）"
+        overlay.panel.title = "Yinqi 独立渲染测试（合成测试数据）"
         overlay.show()
         overlay.renderer.update(SpectrumFrame(bands: [], rmsDB: -160, timestamp: 0, sequence: 0, opacity: 0), settings: Settings(), editing: false, hidden: false)
         RunLoop.main.run(until: Date().addingTimeInterval(1))
@@ -30,7 +30,7 @@ import MetalKit
         print("storeAction=\(String(describing: view.currentRenderPassDescriptor?.colorAttachments[0].storeAction.rawValue)) layer=\(String(describing:view.layer))")
         // 2026-09-11: Editing controls must not survive hiding or locked click-through mode.
         overlay.editing = true
-        let toolbar = NSApp.windows.first { $0.title == "Soundbar 布局工具" }!
+        let toolbar = NSApp.windows.first { $0.title == "Yinqi 布局工具" }!
         assert(toolbar.isVisible && !toolbar.canBecomeKey && !overlay.panel.ignoresMouseEvents)
         let buttons = (toolbar.contentView as! NSStackView).arrangedSubviews.compactMap { $0 as? NSButton }
         assert(buttons.count == 7)

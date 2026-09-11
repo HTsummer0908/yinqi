@@ -15,7 +15,7 @@ struct CaptureStatus {
 
 /// Owns all HAL resources on a serial control queue; the C callback only owns PCM production.
 final class AudioCaptureService {
-    private let control = DispatchQueue(label: "local.soundbar.capture")
+    private let control = DispatchQueue(label: "local.yinqi.capture")
     private var tap: AudioObjectID = 0
     private var device: AudioObjectID = 0
     private var io: AudioDeviceIOProcID?
@@ -54,7 +54,7 @@ final class AudioCaptureService {
                     UInt32(MemoryLayout<pid_t>.size), &pid, &size, &process), "解析自身进程")
                 guard process != 0 else { throw CaptureError(message: "系统未返回自身音频进程 ID") }
                 let description = CATapDescription(stereoGlobalTapButExcludeProcesses: [process])
-                description.name = "Soundbar system audio"
+                description.name = "Yinqi system audio"
                 description.isPrivate = true
                 description.muteBehavior = .unmuted
                 try check(AudioHardwareCreateProcessTap(description, &tap), "创建系统音频 tap")
@@ -69,7 +69,7 @@ final class AudioCaptureService {
                     throw CaptureError(message: "暂不支持 tap 格式：需 Float32 双声道，实际 \(format)")
                 }
                 let config: [String: Any] = [
-                    kAudioAggregateDeviceNameKey: "Soundbar Private Capture",
+                    kAudioAggregateDeviceNameKey: "Yinqi Private Capture",
                     kAudioAggregateDeviceUIDKey: UUID().uuidString,
                     kAudioAggregateDeviceIsPrivateKey: true,
                     // 2026-09-11: SDK documents true as a blocking wait in AudioDeviceStart.

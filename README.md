@@ -10,7 +10,7 @@
 # 在仓库根目录执行（目录可命名为 yinqi）
 ./scripts/test.sh
 ./scripts/build.sh
-open build/Soundbar.app
+open build/Yinqi.app
 ```
 
 图标构建另需完整 Xcode（本机验证 Xcode 27 Beta / Icon Composer 2），仅安装 Command Line Tools 不足以编译原生分层图标。脚本查找常见 Xcode 路径，也可以指定：
@@ -19,7 +19,7 @@ open build/Soundbar.app
 ICON_DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer" ./scripts/build.sh
 ```
 
-构建结果：`build/Soundbar.app`。无第三方依赖，无 SwiftPM 下载；C11 原子队列、Core Audio、Accelerate、AppKit、SwiftUI、MetalKit 全部使用系统工具链。Metal shader 在应用启动时通过公开 API 编译，因此命令行工具可以构建；无需独立 `metal` 编译器。Metal 初始化失败会显示在诊断窗口。
+构建结果：`build/Yinqi.app`。无第三方依赖，无 SwiftPM 下载；C11 原子队列、Core Audio、Accelerate、AppKit、SwiftUI、MetalKit 全部使用系统工具链。Metal shader 在应用启动时通过公开 API 编译，因此命令行工具可以构建；无需独立 `metal` 编译器。Metal 初始化失败会显示在诊断窗口。
 
 脚本生成本地 ad-hoc 签名，校验签名完整性。它不是 Developer ID 分发签名，没有公证、安装器或 App Store 配置。重新构建导致代码签名变化时，macOS 可能再次请求系统音频授权。不访问私有 TCC 数据库，也不自动重置权限。
 
@@ -47,7 +47,7 @@ ICON_DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer" ./scripts/build.
 - “居中”解除停靠并移到屏幕中央，保留当前尺寸；“沿当前边铺满”使用屏幕可用区域，保留厚度。自由布局铺满会默认贴底（水平）或贴左（竖向）。调整尺寸后退出铺满模式。安全区不覆盖菜单栏及可见Dock保留区域。
 - 编辑工具条放在频谱附近，较窄的竖条也可操作；锁定/隐藏时消失。
 
-设置文件：`~/Library/Application Support/local.xinfei.soundbar/settings.json`，schema 1。损坏时回退默认并显示提示；编辑完成立即保存，连续设置更改防抖 300 ms。只持久化设置，不写入音频。目录内无网络客户端代码。
+设置文件：`~/Library/Application Support/local.xinfei.yinqi/settings.json`，schema 1。损坏时回退默认并显示提示；编辑完成立即保存，连续设置更改防抖 300 ms。只持久化设置，不写入音频。目录内无网络客户端代码。
 
 拒绝授权或采集失败时，通过系统设置的“隐私与安全性”检查系统音频相关权限，再点击菜单里的“重新尝试音频采集”。全零数据不等于拒绝授权。系统授权弹窗等待期间 HAL 启动可能阻塞；先处理该弹窗。
 
@@ -86,13 +86,13 @@ python3 -m http.server 8766 --bind 127.0.0.1 --directory Tests/Fixtures
 
 - 中文名称：音栖；英文名称：Yinqi；计划 GitHub 仓库名：`yinqi`。
 - 开发者：[HTsummer0908](https://github.com/HTsummer0908)。远端仓库尚未创建，本地准备阶段不推送。
-- 当前预览版本：0.3.7，新增“关于”分类；版本与构建号由 Info.plist 提供。v1.0.0 尚未正式发布。
+- 当前预览版本：0.3.8，新增“关于”分类；版本与构建号由 Info.plist 提供。v1.0.0 尚未正式发布。
 - 开源许可证尚未选定，暂不声明 MIT 或其他授权。公开发布前需确认许可证并添加 LICENSE。
-- 应用包、可执行文件、源码目录仍使用历史名 Soundbar；bundle ID 与设置目录保留 `local.xinfei.soundbar`，避免丢失已有偏好。统一改名是后续独立事项。
+- 应用包、可执行文件、源码目录统一为 Yinqi，bundle ID 为 `local.xinfei.yinqi`。首次运行自动复制旧版设置；不会覆盖已有新配置或删除旧配置。应用标识变更后可能需要重新授予系统音频权限。
 
 ## 重命名目录与工作区续接
 
-可退出正在进行的构建后，将仓库根目录从 `soundbar` 改为 `yinqi`，再在 Codex 中打开新路径。随目录一起保留隐藏的 `.git`；不要仅复制可见文件。脚本通过自身位置回到仓库根目录，不依赖仓库的绝对路径。README 链接均为相对路径。
+可退出正在进行的构建后，将仓库根目录改为 `Yinqi`（当前目录名），再在 Codex 中打开新路径。随目录一起保留隐藏的 `.git`；不要仅复制可见文件。脚本通过自身位置回到仓库根目录，不依赖仓库的绝对路径。README 链接均为相对路径。
 
 重命名不会改变用户设置存储位置，也不要求修改 bundle ID。历史测试报告可能包含旧工作区绝对路径，那些是当时的证据，不是运行配置。Xcode 的外部安装路径可通过 ICON_DEVELOPER_DIR 覆盖。
 
@@ -107,3 +107,7 @@ python3 -m http.server 8766 --bind 127.0.0.1 --directory Tests/Fixtures
 ## 本地 Git 与后续公开发布
 
 本地 Git 用于保留源代码、图标工程与文档。推送前需确定许可证、完成名称统一和 v1.0 验收、检查提交中无私人文件，再显式创建 GitHub 仓库并推送；当前不配置远端或自动发布。
+
+### 名称迁移（0.3.8）
+
+代码、构建脚本和文档名称统一为 Yinqi。唯一保留旧标识的运行代码用于读取旧设置。历史报告中的产品名称已规范化，不表示重新执行了当时测试。Git 历史及已忽略的旧构建包未改写。

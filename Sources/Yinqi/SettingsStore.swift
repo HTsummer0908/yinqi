@@ -10,10 +10,25 @@ final class SettingsStore: ObservableObject {
     private var pending: DispatchWorkItem?
 
     /// Corrupt local files fall back to defaults and produce one visible warning.
-    init(url: URL? = nil) {
+    init(url: URL? = nil, legacyURL: URL? = nil) {
         self.url = url ?? FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0]
-            .appendingPathComponent("local.xinfei.soundbar/settings.json")
+            .appendingPathComponent("local.xinfei.yinqi/settings.json")
+        // 2026-09-11: Copy the pre-rename preferences once; never overwrite an existing Yinqi file or remove the original.
+        var migrationWarning: String?
+        if !FileManager.default.fileExists(atPath: self.url.path), url == nil || legacyURL != nil {
+            let legacy = legacyURL ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("local.xinfei.soundbar/settings.json")
+            if FileManager.default.fileExists(atPath: legacy.path) {
+                do {
+                    let data = try Data(contentsOf: legacy)
+                    _ = try Settings.decode(data)
+                    try FileManager.default.createDirectory(at: self.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    try data.write(to: self.url, options: .atomic)
+                } catch { migrationWarning = "旧版设置迁移失败：\(error.localizedDescription)" }
+            }
+        }
         value = Settings()
+        warning = migrationWarning
         if FileManager.default.fileExists(atPath:self.url.path) {
             do { value = try Settings.decode(Data(contentsOf:self.url)) }
             catch { warning = "设置文件损坏，已恢复默认值：\(error.localizedDescription)" }

@@ -77,7 +77,7 @@ struct SettingsView: View {
 
     /// Render only the general settings category.
     private var generalSection: some View {
-    Section("Soundbar") {
+    Section("Yinqi") {
         Text("只分析本机系统播放音频，不保存或上传声音。")
             .font(.caption).foregroundStyle(.secondary)
         HStack {

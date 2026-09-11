@@ -1,6 +1,6 @@
-<!doctype html><html lang="zh"><meta charset="utf-8"><title>Soundbar 窗口穿透验证</title>
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>Yinqi 窗口穿透验证</title>
 <style>body{background:#182339;color:white;font:24px system-ui;margin:40px}button{font:24px system-ui}#hit{position:fixed;bottom:36px;left:35%;width:30%;height:96px;background:#f4e1ad;border:0}#result{font-size:40px}input{font-size:24px}</style>
-<h1>Soundbar 阶段 A：独立下层窗口</h1><p>将静态青色标尺覆盖在底部按钮上，点击交叠区域，然后输入测试文本。</p>
-<p id="result">点击计数：0</p><label>焦点验证 <input placeholder="点击后输入 soundbar"></label>
+<h1>Yinqi 阶段 A：独立下层窗口</h1><p>将静态青色标尺覆盖在底部按钮上，点击交叠区域，然后输入测试文本。</p>
+<p id="result">点击计数：0</p><label>焦点验证 <input placeholder="点击后输入 yinqi"></label>
 <button id="hit" onclick="document.querySelector('#result').textContent='点击计数：'+(++window.hits);document.querySelector('input').focus()">点击穿透目标</button>
 <script>window.hits=0</script></html>

@@ -54,6 +54,20 @@ import CoreGraphics
         for count in [16,32,64,128] { let gap = min(8.0,240/Double(count)-1); assert((240-Double(count-1)*gap)/Double(count)>0) }
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
+        // 2026-09-11: Verify rename migration preserves the source and never overwrites new settings.
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let legacy = folder.appendingPathComponent("legacy.json")
+        let migratedURL = folder.appendingPathComponent("new/settings.json")
+        var old = Settings(); old.barCount = 128
+        try JSONEncoder().encode(old).write(to: legacy)
+        let migrated = SettingsStore(url: migratedURL, legacyURL: legacy)
+        assert(migrated.value.barCount == 128 && FileManager.default.fileExists(atPath: legacy.path))
+        migrated.value.barCount = 32; migrated.saveNow()
+        assert(SettingsStore(url: migratedURL, legacyURL: legacy).value.barCount == 32)
+        let invalidURL = folder.appendingPathComponent("invalid.json")
+        try Data("broken".utf8).write(to: legacy)
+        let invalidMigration = SettingsStore(url: invalidURL, legacyURL: legacy)
+        assert(invalidMigration.warning != nil && !FileManager.default.fileExists(atPath: invalidURL.path))
         let url = folder.appendingPathComponent("settings.json")
         let store = SettingsStore(url: url)
         store.value.barCount = 128; store.value.width = 640; store.saveNow()

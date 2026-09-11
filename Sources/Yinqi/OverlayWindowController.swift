@@ -36,7 +36,7 @@ final class OverlayWindowController {
         panel.hidesOnDeactivate = false; panel.ignoresMouseEvents = true
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces,.canJoinAllApplications,.fullScreenAuxiliary]
-        panel.title = "Soundbar Spectrum"
+        panel.title = "Yinqi Spectrum"
         panel.isReleasedWhenClosed = false
         panel.contentView = surface
         renderer.view.frame = surface.bounds
@@ -185,7 +185,7 @@ private final class EditingToolbar {
     /// Icon buttons have descriptive accessibility labels/tooltips and never appear in locked mode.
     init() {
         panel = OverlayPanel(contentRect:NSRect(x:0,y:0,width:336,height:38),styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false)
-        panel.title = "Soundbar 布局工具"
+        panel.title = "Yinqi 布局工具"
         panel.level = .floating; panel.hidesOnDeactivate = false; panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces,.canJoinAllApplications,.fullScreenAuxiliary]
         panel.backgroundColor = .windowBackgroundColor

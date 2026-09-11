@@ -1,4 +1,4 @@
-# Soundbar 分阶段实施计划
+# Yinqi 分阶段实施计划
 
 **Goal:** 按既有设计先验证真实系统采集和窗口兼容，再进入频谱与完整交互。
 **Architecture:** Swift/AppKit 单进程；Core Audio Tap → 预分配 SPSC PCM 队列 → DSP → Metal。主线程管理窗口，串行队列管理音频资源。
@@ -13,9 +13,9 @@ A 的真实音频、普通透明覆盖、Chrome 原生全屏和用户穿透/焦�
 
 ## A — 核心风险门禁
 - [x] C 预分配有界 PCM 队列：先测试交错/非交错、溢出、不覆盖读取、清空。
-- [x] Sources/Soundbar/AudioCaptureService.swift：创建私有非静音全局 tap，排除自身；读取格式；建立 aggregate 和 C IOProc；逆序释放；可见错误。
-- [x] Sources/Soundbar/OverlayWindowController.swift：非激活透明穿透 panel；公开 collectionBehavior；静态、明确标记的验证标尺。
-- [x] Sources/Soundbar/main.swift：菜单栏、首次说明、手动启用、停止、重试、诊断窗口。
+- [x] Sources/Yinqi/AudioCaptureService.swift：创建私有非静音全局 tap，排除自身；读取格式；建立 aggregate 和 C IOProc；逆序释放；可见错误。
+- [x] Sources/Yinqi/OverlayWindowController.swift：非激活透明穿透 panel；公开 collectionBehavior；静态、明确标记的验证标尺。
+- [x] Sources/Yinqi/main.swift：菜单栏、首次说明、手动启用、停止、重试、诊断窗口。
 - [x] scripts/build.sh + Resources/Info.plist：命令行构建与 ad-hoc 签名 .app；声明系统音频用途。
 - [ ] 在真实 .app 中测试授权、已知外部声音、原输出、普通应用/Spaces/全屏/点击与焦点；记录环境和证据。
 - [ ] 核心链路未通过则定位；需要用户完成系统权限或肉眼听觉验证时明确记录门禁，不扩展外观。
