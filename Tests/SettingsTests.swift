@@ -4,6 +4,15 @@ import CoreGraphics
 @main struct SettingsTests {
     /// Exercise missing fields, unknown keys, corruption, bounds, and a negative-coordinate screen.
     static func main() throws {
+        // 2026-09-11: Advanced UI mode must persist without quantizing existing custom values.
+        var detailed = Settings(); detailed.advancedSettings = true; detailed.peakFallSpeed = 14; detailed.releaseMs = 289
+        let detailedReload = try Settings.decode(JSONEncoder().encode(detailed))
+        assert(detailedReload.advancedSettings && detailedReload.peakFallSpeed == 14)
+        detailed.advancedSettings = false
+        let simpleReload = try Settings.decode(JSONEncoder().encode(detailed))
+        assert(!simpleReload.advancedSettings && simpleReload.releaseMs == 289 && simpleReload.peakFallSpeed == 14)
+        let defaultMode = try Settings.decode(Data("{}".utf8))
+        assert(!defaultMode.advancedSettings)
         // 2026-09-11: Verify custom migration, unlimited restoration, presets and persisted mode.
         let legacyRate = try Settings.decode(Data("{\"frameRate\":144}".utf8))
         assert(legacyRate.customFrameRate && legacyRate.frameRate == 144)

@@ -4,6 +4,7 @@ import CoreGraphics
 /// Schema 1 stores appearance and logical-point geometry, never audio or permission state.
 struct Settings: Codable, Equatable {
     var schemaVersion = 1
+    var advancedSettings = false
     // 2026-09-11: Additive defaults preserve existing appearance; zero FPS follows the display.
     var channelMode = "merged"
     var stereoOrder = "ascending"
