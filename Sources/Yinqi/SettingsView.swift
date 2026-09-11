@@ -68,8 +68,7 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
         }
         Section("设置模式") {
-            Toggle("高级设置", isOn: $store.value.advancedSettings)
-            Text("提供更加细致的数值调整").font(.caption).foregroundStyle(.secondary)
+            SettingToggle("高级设置", isOn: $store.value.advancedSettings)
         }
         Section("隐私与项目状态") {
             Text("音频仅在本机实时分析，不录制、不保存、不上传。仅持久化应用设置。")
@@ -82,15 +81,11 @@ struct SettingsView: View {
     /// Render only the general settings category.
     private var generalSection: some View {
     Section("Yinqi") {
-        Text("只分析本机系统播放音频，不保存或上传声音。")
-            .font(.caption).foregroundStyle(.secondary)
         // 2026-09-11: Use the persisted enable intent shared with the menu, while actions own capture lifecycle.
-        Toggle("启用频谱", isOn: Binding(get: { store.value.spectrumEnabled }, set: { enabled in
+        SettingToggle("启用频谱", isOn: Binding(get: { store.value.spectrumEnabled }, set: { enabled in
             if enabled { enableSpectrum() } else { hideSpectrum() }
         }))
-        Toggle("在 Dock 中显示", isOn: $store.value.showInDock)
-        Text("关闭后仍可通过菜单栏频谱图标 打开设置。关闭设置窗口不会停止频谱。")
-            .font(.caption).foregroundStyle(.secondary)
+        SettingToggle("在 Dock 中显示", isOn: $store.value.showInDock)
         Button("打开运行诊断…", action: showDiagnostics)
         if let warning = store.warning { Text(warning).foregroundStyle(.orange) }
         Button("恢复全部默认设置") {
@@ -106,56 +101,51 @@ struct SettingsView: View {
     /// Render only the spectrum settings category.
     private var spectrumSection: some View {
     Section("频谱") {
-        Picker("声道", selection: $store.value.channelMode) {
+        Picker(selection: $store.value.channelMode) {
             Text("合并声道").tag("merged")
             Text("左右声道").tag("stereo")
-        }
-        Picker("柱条总数", selection: $store.value.barCount) {
+        } label: { SettingLabel(title: "声道") }.frame(minHeight: 44)
+        Picker(selection: $store.value.barCount) {
             ForEach([16,32,64,128], id: \.self) { Text("\($0)").tag($0) }
-        }
+        } label: { SettingLabel(title: "柱条总数") }.frame(minHeight: 44)
         if store.value.channelMode == "stereo" {
-            Picker("频率排列", selection: $store.value.stereoOrder) {
+            Picker(selection: $store.value.stereoOrder) {
                 Text("同向：低→高 | 低→高").tag("ascending")
                 Text("低频在外侧：低→高 | 高→低").tag("lowOutside")
                 Text("低频在中央：高→低 | 低→高").tag("lowInside")
-            }
-            Text(store.value.isVertical ? "从上到下分别为左、右声道，各 \(store.value.barCount / 2) 柱。" : "从左到右分别为左、右声道，各 \(store.value.barCount / 2) 柱。")
-                .font(.caption).foregroundStyle(.secondary)
+            } label: { SettingLabel(title: "频率排列") }.frame(minHeight: 44)
             NumericSettingRow(name: "声道额外间隔", value: $store.value.channelGap, range: 0...40, unit: "pt", step: 0.1, presets: [0, 4, 10, 20, 40], advanced: store.value.advancedSettings, lowLabel: "紧", highLabel: "宽")
         }
         NumericSettingRow(name: "最低频率", value: $store.value.frequencyMin, range: 20...(store.value.frequencyMax-1), unit: "Hz", step: 1, presets: [20, 50, 100, 200, 500], advanced: store.value.advancedSettings, lowLabel: "低", highLabel: "高")
         NumericSettingRow(name: "最高频率", value: $store.value.frequencyMax, range: (store.value.frequencyMin+1)...20000, unit: "Hz", step: 1, presets: [4000, 8000, 12000, 16000, 20000], advanced: store.value.advancedSettings, lowLabel: "低", highLabel: "高")
-        Text("默认 20–20,000 Hz；仅调整频谱显示范围，不改变播放声音。实际最高频率受采样率限制，窄低频柱共享 FFT 分辨率。")
-            .font(.caption).foregroundStyle(.secondary)
     }
     }
 
     /// Render only the animation settings category.
     private var animationSection: some View {
     Section("动画") {
-        Toggle("无限制（跟随屏幕最高刷新率）", isOn: unlimitedBinding)
+        SettingToggle("无限制（跟随屏幕最高刷新率）", isOn: unlimitedBinding)
         if store.value.frameRate != 0 {
-            if store.value.advancedSettings { Toggle("自定义帧率", isOn: customFrameRateBinding) }
+            if store.value.advancedSettings { SettingToggle("自定义帧率", isOn: customFrameRateBinding) }
             if store.value.customFrameRate && store.value.advancedSettings {
                 NumericSettingRow(name: "目标帧率", value: frameRateBinding, range: 10...1000, unit: "FPS", step: 1)
             } else {
                 HStack {
-                    Text("目标帧率")
+                    SettingLabel(title: "目标帧率")
+                    if !Settings.frameRatePresets.contains(store.value.frameRate) {
+                        Image(systemName: "info.circle").foregroundStyle(.secondary)
+                            .help("当前自定义帧率已保留；选择预设后替换。")
+                            .accessibilityLabel("当前自定义帧率已保留；选择预设后替换。")
+                    }
                     Spacer()
                     ForEach(Settings.frameRatePresets, id: \.self) { rate in
                         Button("\(rate)") { store.value.frameRate = rate; store.value.customFrameRate = false }
                             .buttonStyle(.bordered)
                             .tint(store.value.frameRate == rate ? Color.accentColor : Color.secondary)
                     }
-                }
-                if !Settings.frameRatePresets.contains(store.value.frameRate) {
-                    Text("当前自定义帧率已保留；选择预设后替换。")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
+                }.frame(minHeight: 44)
             }
         }
-        Text("实际帧率受屏幕和系统调度影响；静音淡出后暂停绘制。")
-            .font(.caption).foregroundStyle(.secondary)
         NumericSettingRow(name: "音量灵敏度", value: $store.value.sensitivityDB, range: -24...24, unit: "dB", step: 0.1, presets: [-24, -12, 0, 12, 24], advanced: store.value.advancedSettings, lowLabel: "弱", highLabel: "强")
         NumericSettingRow(name: "回落时间", value: $store.value.releaseMs, range: 80...500, unit: "ms", step: 1, presets: [500, 350, 250, 150, 80], advanced: store.value.advancedSettings, lowLabel: "慢", highLabel: "快")
     }
@@ -164,42 +154,38 @@ struct SettingsView: View {
     /// Render only the appearance settings category.
     @ViewBuilder private var appearanceSection: some View {
     Section("外观") {
-        Picker("风格", selection: $store.value.style) {
+        Picker(selection: $store.value.style) {
             Text("极简纯色").tag("solid"); Text("渐变").tag("gradient"); Text("复古 LED").tag("led")
-        }
+        } label: { SettingLabel(title: "风格") }.frame(minHeight: 44)
         if store.value.style == "gradient" {
-            Picker("渐变方向", selection: $store.value.gradientDirection) {
+            Picker(selection: $store.value.gradientDirection) {
                 Text("从左到右").tag("horizontal")
                 Text("从下到上").tag("vertical")
-            }
+            } label: { SettingLabel(title: "渐变方向") }.frame(minHeight: 44)
         }
         if store.value.style == "gradient" {
-            ColorPicker("渐变起点", selection: colorBinding(1), supportsOpacity: false)
-            ColorPicker("渐变终点", selection: colorBinding(2), supportsOpacity: false)
+            ColorPicker("渐变起点", selection: colorBinding(1), supportsOpacity: false).frame(minHeight: 44)
+            ColorPicker("渐变终点", selection: colorBinding(2), supportsOpacity: false).frame(minHeight: 44)
         } else {
-            ColorPicker("主色 / LED", selection: colorBinding(0), supportsOpacity: false)
+            ColorPicker("主色 / LED", selection: colorBinding(0), supportsOpacity: false).frame(minHeight: 44)
         }
         NumericSettingRow(name: "柱间距", value: $store.value.gap, range: 0...8, unit: "pt", step: 0.1, presets: [0, 1, 2, 4, 8], advanced: store.value.advancedSettings, lowLabel: "紧", highLabel: "宽")
         NumericSettingRow(name: "柱顶圆角", value: $store.value.cornerRadius, range: 0...8, unit: "pt", step: 0.1, presets: [0, 1, 2, 4, 8], advanced: store.value.advancedSettings, lowLabel: "直", highLabel: "圆")
-        Toggle("基部也应用圆角", isOn: $store.value.roundBase)
-        Text("基部指贴边的一端；关闭时仅柱顶圆角。零柱间距连接相邻柱身，圆角处仍保留弧线。")
-            .font(.caption).foregroundStyle(.secondary)
+        SettingToggle("基部也应用圆角", isOn: $store.value.roundBase)
         NumericSettingRow(name: "柱条透明度", value: percentBinding(\Settings.barOpacity), range: 10...100, unit: "%", step: 1, presets: [10, 30, 50, 75, 100], advanced: store.value.advancedSettings, lowLabel: "淡", highLabel: "浓")
     }
     Section("峰值标记") {
-        Toggle("峰值标记", isOn: $store.value.peakEnabled)
+        SettingToggle("峰值标记", isOn: $store.value.peakEnabled)
         if store.value.peakEnabled {
-            Picker("标记样式", selection: $store.value.peakStyle) {
+            Picker(selection: $store.value.peakStyle) {
                 Text("细横线").tag("line"); Text("小砖块").tag("brick"); Text("圆角砖块").tag("rounded")
-            }
+            } label: { SettingLabel(title: "标记样式") }.frame(minHeight: 44)
             if store.value.peakStyle != "line" {
                 NumericSettingRow(name: "标记厚度", value: $store.value.peakThickness, range: 1...12, unit: "pt", step: 0.5, presets: [1, 2, 3, 6, 12], advanced: store.value.advancedSettings, lowLabel: "细", highLabel: "粗")
             }
             NumericSettingRow(name: "下落速度", value: $store.value.peakFallSpeed, range: 1...200, unit: "%/s", step: 1, presets: [5, 10, 20, 30, 40], advanced: store.value.advancedSettings, lowLabel: "慢", highLabel: "快")
-            Toggle("自定义标记颜色", isOn: $store.value.peakCustomColor)
-            if store.value.peakCustomColor { ColorPicker("标记颜色", selection: peakColorBinding, supportsOpacity: false) }
-            Text("柱顶推高标记，随后缓慢落回柱顶；速度为每秒下降高度百分比，细横线固定 1 pt。")
-                .font(.caption).foregroundStyle(.secondary)
+            SettingToggle("自定义标记颜色", isOn: $store.value.peakCustomColor)
+            if store.value.peakCustomColor { ColorPicker("标记颜色", selection: peakColorBinding, supportsOpacity: false).frame(minHeight: 44) }
         }
     }
     }
@@ -207,23 +193,22 @@ struct SettingsView: View {
     /// Render only the placement settings category.
     private var placementSection: some View {
     Section("位置") {
-        Picker("位置", selection: placementBinding) {
+        Picker(selection: placementBinding) {
             Text("底部").tag("bottom"); Text("顶部").tag("top"); Text("左侧").tag("left"); Text("右侧").tag("right"); Text("自由").tag("free")
-        }
-        Picker("生长方向", selection: $store.value.growthDirection) {
+        } label: { SettingLabel(title: "位置") }.frame(minHeight: 44)
+        Picker(selection: $store.value.growthDirection) {
             if store.value.isVertical {
                 Text("向右").tag("right"); Text("向左").tag("left")
             } else {
                 Text("向上").tag("up"); Text("向下").tag("down")
             }
-        }
+        } label: { SettingLabel(title: "生长方向") }.frame(minHeight: 44)
         HStack {
             Button("居中") { quickLayout("center") }
             Button("沿当前边铺满") { quickLayout("fill") }
+            Image(systemName: "info.circle").foregroundStyle(.secondary).help("铺满使用屏幕可用区域；编辑模式可调整停靠位置、居中和锁定。")
             Button("调整 / 锁定悬浮窗", action: editSpectrum)
-        }
-        Text("铺满使用屏幕可用区域；编辑模式提供四边停靠、居中、铺满和锁定图标。侧边频率轴从上到下，柱条向屏幕内生长。")
-            .font(.caption).foregroundStyle(.secondary)
+        }.frame(minHeight: 44)
         NumericSettingRow(name: "边缘间距", value: $store.value.edgeInset, range: 0...120, unit: "pt", step: 1, presets: [0, 8, 24, 60, 120], advanced: store.value.advancedSettings, lowLabel: "近", highLabel: "远")
     }
     }
@@ -296,13 +281,13 @@ private struct NumericSettingRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             if !presets.isEmpty && advanced {
-                Toggle("自定义" + name, isOn: $input.custom)
+                SettingToggle("自定义" + name, isOn: $input.custom)
                     .onChange(of: input.custom) { _, _ in focused = false }
             }
             if presets.isEmpty || (advanced && input.custom) {
             HStack(spacing: 10) {
                 // 2026-09-11: Explicit columns keep every slider and numeric field aligned across categories.
-                Text(name).frame(minWidth: 110, maxWidth: .infinity, alignment: .leading)
+                SettingLabel(title: name).frame(minWidth: 110, maxWidth: .infinity, alignment: .leading)
                 // 2026-09-11: Flexible label space pushes the equal-width control columns to the trailing edge.
                 Slider(value: sliderBinding, in: range).frame(width: 180).accessibilityLabel(name)
                 TextField(name, text: $input.text)
@@ -312,10 +297,10 @@ private struct NumericSettingRow: View {
                     .onSubmit { commit() }
                     .onExitCommand { sync(); focused = false }
                 Text(unit).foregroundStyle(.secondary).frame(width: 30, alignment: .trailing)
-            }
+            }.frame(minHeight: 44)
             } else {
                 HStack {
-                    Text(name).frame(minWidth: 110, maxWidth: .infinity, alignment: .leading)
+                    SettingLabel(title: name).frame(minWidth: 110, maxWidth: .infinity, alignment: .leading)
                     VStack(spacing: 0) {
                         // 2026-09-11: Exactly five native stops provide readable ticks without the old dense numeric-step rendering.
                         // 2026-09-11: Grouped Form reserves an implicit label column unless labels are hidden.
@@ -331,7 +316,7 @@ private struct NumericSettingRow: View {
                         }.font(.caption).foregroundStyle(.secondary).frame(width: 306)
                     }.frame(width: 306)
                     .help("拖动选择预设；未拖动时保留当前数值。高级设置可精确调整。")
-                }
+                }.frame(minHeight: 44)
             }
             if input.invalid { Text("请输入 \(range.lowerBound.formatted())–\(range.upperBound.formatted()) 范围内的数字")
                 .font(.caption).foregroundStyle(.red) }
@@ -400,5 +385,44 @@ private enum SettingsCategory: String, CaseIterable {
         case .placement: return "rectangle.arrowtriangle.2.outward"
         case .about: return "info.circle"
         }
+    }
+}
+
+/// 2026-09-11: Keep explanatory text beside the control name, available through native hover help and accessibility.
+private struct SettingLabel: View {
+    let title: String
+    private var hint: String? {
+        switch title {
+        case "峰值标记": return "柱顶推高标记，随后缓慢落回柱顶。"
+        case "基部也应用圆角": return "基部是贴边的一端；关闭时仅柱顶圆角。"
+        case "柱间距": return "零间距连接相邻柱身，圆角处仍保留弧线。"
+        case "在 Dock 中显示": return "关闭后仍可从菜单栏打开设置。关闭设置窗口不会停止频谱。"
+        case "启用频谱": return "只分析本机系统播放音频，不保存或上传声音。"
+        case "高级设置": return "提供更加细致的数值调整"
+        case "声道", "频率排列": return "左右声道各占一半柱数；水平时左、右排列，侧边时上、下排列。"
+        case "最低频率", "最高频率": return "仅调整频谱显示范围，不改变声音。上限受采样率限制，窄低频柱共享 FFT 分辨率。"
+        case "目标帧率", "无限制（跟随屏幕最高刷新率）": return "实际帧率受屏幕和系统调度影响；静音淡出后暂停绘制。"
+        default: return nil
+        }
+    }
+    var body: some View {
+        HStack(spacing: 5) {
+            Text(title)
+            if let hint {
+                Image(systemName: "info.circle").font(.caption).foregroundStyle(.secondary)
+                    .help(hint).accessibilityLabel(title + "说明：" + hint)
+            }
+        }
+    }
+}
+
+/// 2026-09-11: Match toggle rows to the slider/caption group's 44-point minimum without clipping large text.
+private struct SettingToggle: View {
+    let title: String
+    @Binding var isOn: Bool
+    /// 2026-09-11: Preserve the existing setting binding while sharing row sizing and help labels.
+    init(_ title: String, isOn: Binding<Bool>) { self.title = title; self._isOn = isOn }
+    var body: some View {
+        Toggle(isOn: $isOn) { SettingLabel(title: title) }.frame(minHeight: 44)
     }
 }
