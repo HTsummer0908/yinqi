@@ -14,6 +14,9 @@ struct Settings: Codable, Equatable {
     var roundBase = false
     var layoutMode = "custom"
     var frameRate = 60
+    var customFrameRate = false
+    var lastLimitedFrameRate = 60
+    static let frameRatePresets = [10, 15, 30, 60, 120]
     var showInDock = true
     var hasLaunched = false
     var spectrumEnabled = false
@@ -47,6 +50,10 @@ struct Settings: Codable, Equatable {
         s.frequencyMin = bound(frequencyMin, 20, 19999, 20)
         s.frequencyMax = bound(frequencyMax, s.frequencyMin + 1, 20000, 20000)
         s.frameRate = s.frameRate == 0 ? 0 : min(1000, max(10, s.frameRate))
+        // 2026-09-11: Preserve legacy nonpreset rates as custom, and remember finite rates across unlimited mode.
+        s.lastLimitedFrameRate = min(1000, max(10, s.lastLimitedFrameRate))
+        if s.frameRate != 0 { s.lastLimitedFrameRate = s.frameRate }
+        if !Self.frameRatePresets.contains(s.lastLimitedFrameRate) { s.customFrameRate = true }
         if ![16,32,64,128].contains(s.barCount) { s.barCount = 64 }
         if !["top","bottom","left","right","free"].contains(s.placementMode) { s.placementMode = "bottom" }
         if !["up","down","left","right"].contains(s.growthDirection) { s.growthDirection = "up" }
@@ -63,6 +70,25 @@ struct Settings: Codable, Equatable {
         s.primaryColor = normalizedColor(primaryColor)
         s.gradientColors = gradientColors.count == 2 ? gradientColors.map(normalizedColor) : Settings().gradientColors
         return s
+    }
+
+    /// 2026-09-11: Unlimited changes scheduling only and restores the last finite selection when disabled.
+    func settingUnlimited(_ enabled: Bool) -> Settings {
+        var s = validated()
+        if enabled { s.frameRate = 0 } else { s.frameRate = s.lastLimitedFrameRate }
+        return s.validated()
+    }
+
+    /// 2026-09-11: Leaving custom mode selects the closest preset; ties prefer the lower rate.
+    func settingCustomFrameRate(_ enabled: Bool) -> Settings {
+        var s = validated()
+        s.customFrameRate = enabled
+        if !enabled {
+            let nearest = Self.frameRatePresets.min { abs($0-s.lastLimitedFrameRate) < abs($1-s.lastLimitedFrameRate) }!
+            s.lastLimitedFrameRate = nearest
+            if s.frameRate != 0 { s.frameRate = nearest }
+        }
+        return s.validated()
     }
 
     /// Growth determines the frequency axis even after a docked overlay is dragged free.

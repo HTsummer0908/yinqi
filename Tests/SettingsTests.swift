@@ -4,6 +4,18 @@ import CoreGraphics
 @main struct SettingsTests {
     /// Exercise missing fields, unknown keys, corruption, bounds, and a negative-coordinate screen.
     static func main() throws {
+        // 2026-09-11: Verify custom migration, unlimited restoration, presets and persisted mode.
+        let legacyRate = try Settings.decode(Data("{\"frameRate\":144}".utf8))
+        assert(legacyRate.customFrameRate && legacyRate.frameRate == 144)
+        let unlimited = legacyRate.settingUnlimited(true)
+        assert(unlimited.frameRate == 0 && unlimited.lastLimitedFrameRate == 144)
+        assert(unlimited.settingUnlimited(false).frameRate == 144)
+        let preset = legacyRate.settingCustomFrameRate(false)
+        assert(preset.frameRate == 120 && !preset.customFrameRate)
+        let custom = preset.settingCustomFrameRate(true)
+        assert(custom.customFrameRate && custom.frameRate == 120)
+        let customReloaded = try Settings.decode(JSONEncoder().encode(custom))
+        assert(customReloaded == custom)
         // 2026-09-11: Symmetric gain bounds and retired background fields remain compatible with old JSON.
         for (input, expected) in [(-30.0, -24.0), (-24, -24), (0, 0), (24, 24), (30, 24)] {
             var gain = Settings(); gain.sensitivityDB = input

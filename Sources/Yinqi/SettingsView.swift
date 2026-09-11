@@ -131,11 +131,15 @@ struct SettingsView: View {
     Section("动画") {
         Toggle("无限制（跟随屏幕最高刷新率）", isOn: unlimitedBinding)
         if store.value.frameRate != 0 {
-            NumericSettingRow(name: "目标帧率", value: frameRateBinding, range: 10...1000, unit: "FPS", step: 1)
-            HStack {
-                ForEach([10,30,60,120,144,240], id: \.self) { rate in
-                    Button("\(rate)") { store.value.frameRate = rate }
-                }
+            Toggle("自定义帧率", isOn: customFrameRateBinding)
+            if store.value.customFrameRate {
+                NumericSettingRow(name: "目标帧率", value: frameRateBinding, range: 10...1000, unit: "FPS", step: 1)
+            } else {
+                Picker("目标帧率", selection: $store.value.frameRate) {
+                    ForEach(Settings.frameRatePresets, id: \.self) { rate in
+                        Text("\(rate)").tag(rate)
+                    }
+                }.pickerStyle(.segmented)
             }
         }
         Text("实际帧率受屏幕和系统调度影响；静音淡出后暂停绘制。")
@@ -196,9 +200,14 @@ struct SettingsView: View {
     }
     }
 
-    /// Zero encodes screen-following mode; returning to a fixed limit restores the default 60 FPS.
+    /// 2026-09-11: Zero encodes screen-following mode; switching back restores the prior finite rate.
     private var unlimitedBinding: Binding<Bool> {
-        Binding(get: { store.value.frameRate == 0 }, set: { store.value.frameRate = $0 ? 0 : 60 })
+        Binding(get: { store.value.frameRate == 0 }, set: { store.value = store.value.settingUnlimited($0) })
+    }
+
+    /// 2026-09-11: Mutually exclusive preset/custom controls share one persisted scheduling setting.
+    private var customFrameRateBinding: Binding<Bool> {
+        Binding(get: { store.value.customFrameRate }, set: { store.value = store.value.settingCustomFrameRate($0) })
     }
 
     /// The UI edits integral target rates while JSON retains the integer representation.
@@ -245,7 +254,8 @@ private struct NumericSettingRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 10) {
                 // 2026-09-11: Explicit columns keep every slider and numeric field aligned across categories.
-                Text(name).frame(width: 110, alignment: .leading)
+                Text(name).frame(minWidth: 110, maxWidth: .infinity, alignment: .leading)
+                // 2026-09-11: Flexible label space pushes the equal-width control columns to the trailing edge.
                 Slider(value: sliderBinding, in: range).frame(width: 180).accessibilityLabel(name)
                 TextField(name, text: $input.text)
                     .labelsHidden()
@@ -253,7 +263,7 @@ private struct NumericSettingRow: View {
                     .multilineTextAlignment(.trailing).focused($focused)
                     .onSubmit { commit() }
                     .onExitCommand { sync(); focused = false }
-                Text(unit).foregroundStyle(.secondary).frame(width: 30, alignment: .leading)
+                Text(unit).foregroundStyle(.secondary).frame(width: 30, alignment: .trailing)
             }
             if input.invalid { Text("请输入 \(range.lowerBound.formatted())–\(range.upperBound.formatted()) 范围内的数字")
                 .font(.caption).foregroundStyle(.red) }
