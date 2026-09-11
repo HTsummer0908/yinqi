@@ -104,16 +104,16 @@ struct SettingsView: View {
         Picker(selection: $store.value.channelMode) {
             Text("合并声道").tag("merged")
             Text("左右声道").tag("stereo")
-        } label: { SettingLabel(title: "声道") }.frame(minHeight: 44)
+        } label: { SettingLabel(title: "声道") }.frame(minHeight: settingControlHeight)
         Picker(selection: $store.value.barCount) {
             ForEach([16,32,64,128], id: \.self) { Text("\($0)").tag($0) }
-        } label: { SettingLabel(title: "柱条总数") }.frame(minHeight: 44)
+        } label: { SettingLabel(title: "柱条总数") }.frame(minHeight: settingControlHeight)
         if store.value.channelMode == "stereo" {
             Picker(selection: $store.value.stereoOrder) {
                 Text("同向：低→高 | 低→高").tag("ascending")
                 Text("低频在外侧：低→高 | 高→低").tag("lowOutside")
                 Text("低频在中央：高→低 | 低→高").tag("lowInside")
-            } label: { SettingLabel(title: "频率排列") }.frame(minHeight: 44)
+            } label: { SettingLabel(title: "频率排列") }.frame(minHeight: settingControlHeight)
             NumericSettingRow(name: "声道额外间隔", value: $store.value.channelGap, range: 0...40, unit: "pt", step: 0.1, presets: [0, 4, 10, 20, 40], advanced: store.value.advancedSettings, lowLabel: "紧", highLabel: "宽")
         }
         NumericSettingRow(name: "最低频率", value: $store.value.frequencyMin, range: 20...(store.value.frequencyMax-1), unit: "Hz", step: 1, presets: [20, 50, 100, 200, 500], advanced: store.value.advancedSettings, lowLabel: "低", highLabel: "高")
@@ -143,7 +143,7 @@ struct SettingsView: View {
                             .buttonStyle(.bordered)
                             .tint(store.value.frameRate == rate ? Color.accentColor : Color.secondary)
                     }
-                }.frame(minHeight: 44)
+                }.frame(minHeight: settingControlHeight)
             }
         }
         NumericSettingRow(name: "音量灵敏度", value: $store.value.sensitivityDB, range: -24...24, unit: "dB", step: 0.1, presets: [-24, -12, 0, 12, 24], advanced: store.value.advancedSettings, lowLabel: "弱", highLabel: "强")
@@ -156,18 +156,18 @@ struct SettingsView: View {
     Section("外观") {
         Picker(selection: $store.value.style) {
             Text("极简纯色").tag("solid"); Text("渐变").tag("gradient"); Text("复古 LED").tag("led")
-        } label: { SettingLabel(title: "风格") }.frame(minHeight: 44)
+        } label: { SettingLabel(title: "风格") }.frame(minHeight: settingControlHeight)
         if store.value.style == "gradient" {
             Picker(selection: $store.value.gradientDirection) {
                 Text("从左到右").tag("horizontal")
                 Text("从下到上").tag("vertical")
-            } label: { SettingLabel(title: "渐变方向") }.frame(minHeight: 44)
+            } label: { SettingLabel(title: "渐变方向") }.frame(minHeight: settingControlHeight)
         }
         if store.value.style == "gradient" {
-            ColorPicker("渐变起点", selection: colorBinding(1), supportsOpacity: false).frame(minHeight: 44)
-            ColorPicker("渐变终点", selection: colorBinding(2), supportsOpacity: false).frame(minHeight: 44)
+            ColorPicker("渐变起点", selection: colorBinding(1), supportsOpacity: false).frame(minHeight: settingControlHeight)
+            ColorPicker("渐变终点", selection: colorBinding(2), supportsOpacity: false).frame(minHeight: settingControlHeight)
         } else {
-            ColorPicker("主色 / LED", selection: colorBinding(0), supportsOpacity: false).frame(minHeight: 44)
+            ColorPicker("主色 / LED", selection: colorBinding(0), supportsOpacity: false).frame(minHeight: settingControlHeight)
         }
         NumericSettingRow(name: "柱间距", value: $store.value.gap, range: 0...8, unit: "pt", step: 0.1, presets: [0, 1, 2, 4, 8], advanced: store.value.advancedSettings, lowLabel: "紧", highLabel: "宽")
         NumericSettingRow(name: "柱顶圆角", value: $store.value.cornerRadius, range: 0...8, unit: "pt", step: 0.1, presets: [0, 1, 2, 4, 8], advanced: store.value.advancedSettings, lowLabel: "直", highLabel: "圆")
@@ -179,13 +179,13 @@ struct SettingsView: View {
         if store.value.peakEnabled {
             Picker(selection: $store.value.peakStyle) {
                 Text("细横线").tag("line"); Text("小砖块").tag("brick"); Text("圆角砖块").tag("rounded")
-            } label: { SettingLabel(title: "标记样式") }.frame(minHeight: 44)
+            } label: { SettingLabel(title: "标记样式") }.frame(minHeight: settingControlHeight)
             if store.value.peakStyle != "line" {
                 NumericSettingRow(name: "标记厚度", value: $store.value.peakThickness, range: 1...12, unit: "pt", step: 0.5, presets: [1, 2, 3, 6, 12], advanced: store.value.advancedSettings, lowLabel: "细", highLabel: "粗")
             }
             NumericSettingRow(name: "下落速度", value: $store.value.peakFallSpeed, range: 1...200, unit: "%/s", step: 1, presets: [5, 10, 20, 30, 40], advanced: store.value.advancedSettings, lowLabel: "慢", highLabel: "快")
             SettingToggle("自定义标记颜色", isOn: $store.value.peakCustomColor)
-            if store.value.peakCustomColor { ColorPicker("标记颜色", selection: peakColorBinding, supportsOpacity: false).frame(minHeight: 44) }
+            if store.value.peakCustomColor { ColorPicker("标记颜色", selection: peakColorBinding, supportsOpacity: false).frame(minHeight: settingControlHeight) }
         }
     }
     }
@@ -195,20 +195,20 @@ struct SettingsView: View {
     Section("位置") {
         Picker(selection: placementBinding) {
             Text("底部").tag("bottom"); Text("顶部").tag("top"); Text("左侧").tag("left"); Text("右侧").tag("right"); Text("自由").tag("free")
-        } label: { SettingLabel(title: "位置") }.frame(minHeight: 44)
+        } label: { SettingLabel(title: "位置") }.frame(minHeight: settingControlHeight)
         Picker(selection: $store.value.growthDirection) {
             if store.value.isVertical {
                 Text("向右").tag("right"); Text("向左").tag("left")
             } else {
                 Text("向上").tag("up"); Text("向下").tag("down")
             }
-        } label: { SettingLabel(title: "生长方向") }.frame(minHeight: 44)
+        } label: { SettingLabel(title: "生长方向") }.frame(minHeight: settingControlHeight)
         HStack {
             Button("居中") { quickLayout("center") }
             Button("沿当前边铺满") { quickLayout("fill") }
             Image(systemName: "info.circle").foregroundStyle(.secondary).help("铺满使用屏幕可用区域；编辑模式可调整停靠位置、居中和锁定。")
             Button("调整 / 锁定悬浮窗", action: editSpectrum)
-        }.frame(minHeight: 44)
+        }.frame(minHeight: settingControlHeight)
         NumericSettingRow(name: "边缘间距", value: $store.value.edgeInset, range: 0...120, unit: "pt", step: 1, presets: [0, 8, 24, 60, 120], advanced: store.value.advancedSettings, lowLabel: "近", highLabel: "远")
     }
     }
@@ -297,7 +297,7 @@ private struct NumericSettingRow: View {
                     .onSubmit { commit() }
                     .onExitCommand { sync(); focused = false }
                 Text(unit).foregroundStyle(.secondary).frame(width: 30, alignment: .trailing)
-            }.frame(minHeight: 44)
+            }.frame(minHeight: settingControlHeight)
             } else {
                 HStack {
                     SettingLabel(title: name).frame(minWidth: 110, maxWidth: .infinity, alignment: .leading)
@@ -316,7 +316,7 @@ private struct NumericSettingRow: View {
                         }.font(.caption).foregroundStyle(.secondary).frame(width: 306)
                     }.frame(width: 306)
                     .help("拖动选择预设；未拖动时保留当前数值。高级设置可精确调整。")
-                }.frame(minHeight: 44)
+                }.frame(minHeight: settingControlHeight)
             }
             if input.invalid { Text("请输入 \(range.lowerBound.formatted())–\(range.upperBound.formatted()) 范围内的数字")
                 .font(.caption).foregroundStyle(.red) }
@@ -416,13 +416,16 @@ private struct SettingLabel: View {
     }
 }
 
-/// 2026-09-11: Match toggle rows to the slider/caption group's 44-point minimum without clipping large text.
+/// 2026-09-11: Share compact content sizing; grouped Form adds its own vertical row insets.
 private struct SettingToggle: View {
     let title: String
     @Binding var isOn: Bool
     /// 2026-09-11: Preserve the existing setting binding while sharing row sizing and help labels.
     init(_ title: String, isOn: Binding<Bool>) { self.title = title; self._isOn = isOn }
     var body: some View {
-        Toggle(isOn: $isOn) { SettingLabel(title: title) }.frame(minHeight: 44)
+        Toggle(isOn: $isOn) { SettingLabel(title: title) }.frame(minHeight: settingControlHeight)
     }
 }
+
+/// 2026-09-11: Use 28 pt for control content, not the whole row; 44 pt plus Form insets made settings too sparse.
+private let settingControlHeight: CGFloat = 28
