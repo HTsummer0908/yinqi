@@ -1,14 +1,19 @@
 # 音栖 Yinqi
 
+[简体中文](README.md) | [English](README.en.md)
+
 让声音栖于桌面。轻量的原生 macOS 系统音频频谱工具。
 
-**版本：1.0.1 · build 32** · 仓库目前为私有，公开将在单独确认后进行。
+**最新稳定版：1.0.1 · build 32**
+
+`main` 分支还包含尚未发布的 8 套内置主题预设及预设后二次调整状态；Releases 中的 1.0.1 安装包暂不包含该功能。
 
 ## 功能
 
 - 实时分析系统播放音频，支持合并声道、左右声道与对称频率排列。
 - 透明悬浮、鼠标穿透；支持四边停靠、铺满、拖动和缩放。
 - 纯色、渐变、复古 LED；可调柱数、间距、圆角、透明度与峰值标记。
+- `main` 分支提供 8 套内置主题预设，选择后仍可继续调整，并可恢复到该预设的初始参数。
 - 普通模式提供语义档位滑块；关于页开启高级设置后可精确输入。
 - 帧率预设 10/15/30/60/120，自定义 10–1000，或跟随屏幕最高刷新率；静音后淡出并暂停持续绘制。
 - 菜单栏常驻，可选 Dock 显示；诊断仅在主动打开时运行。
@@ -49,7 +54,7 @@ bash scripts/build.sh
 open build/Yinqi.app
 ```
 
-脚本会寻找常见 Xcode 路径，也可显式指定：
+脚本会寻找常见 Xcode 路径，也可显式指定。当前已使用外置硬盘中的 Xcode 27 Beta 完成全量构建验证：
 
 ```sh
 ICON_DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer" bash scripts/build.sh
@@ -90,7 +95,11 @@ bash scripts/test-termination.sh
 主要代码：`Sources/Realtime`（实时队列）、`Sources/Yinqi`（采集、分析、渲染和 UI）。图标源文件位于 `Resources/Branding`。
 截图隐藏实现参考 [LyricsX](https://github.com/MxIris-LyricsX-Project/LyricsX) 的公开 AppKit 窗口共享策略。
 
-开源许可证待确认；私有准备阶段不授予额外开源许可。公开仓库前应完成许可证与分发方式确认。
+## 开源许可证
+
+本项目采用 [Mozilla Public License 2.0](LICENSE)。你可以使用、修改、分发及用于商业用途；如果对现有 MPL 文件进行修改并向外分发，需要公开这些修改文件的源码，并继续以 MPL-2.0 提供。与本项目组合的独立文件或模块不因此被要求采用 MPL。
+
+本说明仅用于帮助理解，具体权利与义务以 [LICENSE](LICENSE) 正文为准。
 
 ## 渲染方式与性能
 
