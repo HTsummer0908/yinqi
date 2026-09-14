@@ -4,3 +4,4 @@ dist/
 output/
 *.xcuserstate
 xcuserdata/
+.worktrees/
