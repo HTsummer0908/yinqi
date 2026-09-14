@@ -203,6 +203,36 @@ struct SettingsView: View {
 
     /// Render only the appearance settings category.
     @ViewBuilder private var appearanceSection: some View {
+    Section(L("主题预设")) {
+        if let preset = store.value.selectedThemePreset {
+            HStack {
+                Text(store.value.isThemePresetCustomized
+                    ? L("自定义 · 基于 %@", L(preset.nameKey))
+                    : L("已应用：%@", L(preset.nameKey)))
+                    .font(.callout).foregroundStyle(.secondary)
+                Spacer()
+                if store.value.isThemePresetCustomized {
+                    Button(L("恢复此预设")) { store.value = store.value.restoringThemePreset() }
+                }
+            }.frame(minHeight: settingControlHeight)
+        } else {
+            Text(L("选择一个预设作为起点，之后仍可修改下方所有设置。"))
+                .font(.callout).foregroundStyle(.secondary)
+        }
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+            ForEach(ThemePreset.all) { preset in
+                Button { store.value = store.value.applyingThemePreset(preset) } label: {
+                    ThemePresetCard(
+                        preset: preset,
+                        selected: store.value.themePresetID == preset.id,
+                        customized: store.value.themePresetID == preset.id && store.value.isThemePresetCustomized
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(L("应用主题：%@", L(preset.nameKey)))
+            }
+        }.padding(.vertical, 2)
+    }
     Section(L("外观")) {
         Picker(selection: $store.value.style) {
             Text(L("极简纯色")).tag("solid"); Text(L("渐变")).tag("gradient"); Text(L("复古 LED")).tag("led")
@@ -419,6 +449,52 @@ private final class NumericDraft: ObservableObject {
 /// Category selection is transient UI state and never changes audio or saved user preferences.
 private final class SettingsNavigation: ObservableObject {
     @Published var category = SettingsCategory.general
+}
+
+/// 2026-09-14: A compact native card previews each built-in palette without introducing image assets.
+private struct ThemePresetCard: View {
+    let preset: ThemePreset
+    let selected: Bool
+    let customized: Bool
+
+    private var first: Color {
+        let c = preset.values.style == "gradient" ? preset.values.gradientColors[0] : preset.values.primaryColor
+        return Color(red: c[0], green: c[1], blue: c[2])
+    }
+    private var last: Color {
+        let c = preset.values.style == "gradient" ? preset.values.gradientColors[1] : preset.values.primaryColor
+        return Color(red: c[0], green: c[1], blue: c[2])
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            HStack(alignment: .bottom, spacing: 2) {
+                ForEach(Array([9,18,13,24,16,21,11].enumerated()), id: \.offset) { index, height in
+                    RoundedRectangle(cornerRadius: preset.values.style == "led" ? 1 : 2)
+                        .fill(LinearGradient(colors: [first, last], startPoint: .bottom, endPoint: .top))
+                        .frame(width: 4, height: CGFloat(height))
+                        // 2026-09-14: LED cards use a dotted mask to suggest the production segmented renderer.
+                        .mask(preset.values.style == "led"
+                            ? AnyView(VStack(spacing: 2) {
+                                ForEach(0..<4, id: \.self) { _ in Rectangle().frame(height: 4) }
+                            })
+                            : AnyView(Rectangle()))
+                        .opacity(index == 0 || index == 6 ? 0.72 : 1)
+                }
+            }.frame(width: 42, height: 26, alignment: .bottom)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L(preset.nameKey)).font(.callout).fontWeight(.semibold).lineLimit(1)
+                Text(customized ? L("已修改") : L(preset.subtitleKey))
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            if selected { Image(systemName: customized ? "slider.horizontal.3" : "checkmark.circle.fill").foregroundStyle(first) }
+        }
+        .padding(10).frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 10).fill(first.opacity(selected ? 0.12 : 0.04)))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(selected ? first.opacity(0.9) : Color.secondary.opacity(0.2), lineWidth: selected ? 1.5 : 1))
+        .contentShape(RoundedRectangle(cornerRadius: 10))
+    }
 }
 
 /// Stable sidebar categories group controls by the task the user wants to perform.

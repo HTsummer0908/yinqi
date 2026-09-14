@@ -1,6 +1,49 @@
 import Foundation
 import CoreGraphics
 
+/// 2026-09-14: A built-in theme is an immutable visual starting point; users continue editing the copied settings.
+struct ThemePreset: Identifiable, Equatable {
+    struct Values: Equatable {
+        let barCount: Int
+        let style: String
+        let primaryColor: [Double]
+        let gradientColors: [[Double]]
+        let gradientDirection: String
+        let barOpacity: Double
+        let gap: Double
+        let cornerRadius: Double
+        let roundBase: Bool
+        let peakEnabled: Bool
+        let peakStyle: String
+        let peakThickness: Double
+        let peakFallSpeed: Double
+        let sensitivityDB: Double
+        let releaseMs: Double
+        /// Only the performance preset owns frame rate; visual themes preserve the user's scheduling choice.
+        let frameRate: Int?
+    }
+
+    let id: String
+    let nameKey: String
+    let subtitleKey: String
+    let values: Values
+
+    /// 2026-09-14: Keep the first release deterministic and compatible with the renderer's supported bar counts.
+    static let all: [ThemePreset] = [
+        ThemePreset(id: "glacierBlue", nameKey: "冰川蓝", subtitleKey: "日常默认", values: Values(barCount: 64, style: "gradient", primaryColor: [0.22,0.75,0.97], gradientColors: [[0.22,0.75,0.97],[0.62,1.0,0.89]], gradientDirection: "horizontal", barOpacity: 0.70, gap: 2, cornerRadius: 2, roundBase: false, peakEnabled: false, peakStyle: "brick", peakThickness: 3, peakFallSpeed: 30, sensitivityDB: 0, releaseMs: 180, frameRate: nil)),
+        ThemePreset(id: "neonNight", nameKey: "霓虹夜色", subtitleKey: "赛博醒目", values: Values(barCount: 128, style: "gradient", primaryColor: [0.20,0.96,1.0], gradientColors: [[0.20,0.96,1.0],[1.0,0.25,0.79]], gradientDirection: "horizontal", barOpacity: 0.92, gap: 1, cornerRadius: 3, roundBase: false, peakEnabled: true, peakStyle: "rounded", peakThickness: 3, peakFallSpeed: 40, sensitivityDB: 3, releaseMs: 120, frameRate: nil)),
+        ThemePreset(id: "sunsetGlow", nameKey: "日落余晖", subtitleKey: "温暖柔和", values: Values(barCount: 64, style: "gradient", primaryColor: [1.0,0.70,0.30], gradientColors: [[1.0,0.70,0.30],[1.0,0.33,0.39]], gradientDirection: "horizontal", barOpacity: 0.78, gap: 4, cornerRadius: 5, roundBase: false, peakEnabled: false, peakStyle: "brick", peakThickness: 3, peakFallSpeed: 20, sensitivityDB: 0, releaseMs: 260, frameRate: nil)),
+        ThemePreset(id: "aurora", nameKey: "极光", subtitleKey: "流光层次", values: Values(barCount: 128, style: "gradient", primaryColor: [0.32,0.95,0.73], gradientColors: [[0.32,0.95,0.73],[0.56,0.43,1.0]], gradientDirection: "horizontal", barOpacity: 0.68, gap: 1, cornerRadius: 4, roundBase: false, peakEnabled: true, peakStyle: "line", peakThickness: 1, peakFallSpeed: 30, sensitivityDB: 0, releaseMs: 180, frameRate: nil)),
+        ThemePreset(id: "vinyl", nameKey: "黑胶唱片", subtitleKey: "复古律动", values: Values(barCount: 32, style: "led", primaryColor: [1.0,0.68,0.25], gradientColors: [[1.0,0.80,0.39],[1.0,0.54,0.20]], gradientDirection: "horizontal", barOpacity: 0.88, gap: 4, cornerRadius: 1, roundBase: false, peakEnabled: true, peakStyle: "brick", peakThickness: 3, peakFallSpeed: 15, sensitivityDB: 1, releaseMs: 320, frameRate: nil)),
+        ThemePreset(id: "terminalGreen", nameKey: "终端绿", subtitleKey: "极客克制", values: Values(barCount: 64, style: "led", primaryColor: [0.27,1.0,0.54], gradientColors: [[0.27,1.0,0.54],[0.62,1.0,0.46]], gradientDirection: "horizontal", barOpacity: 0.84, gap: 2, cornerRadius: 0, roundBase: false, peakEnabled: true, peakStyle: "line", peakThickness: 1, peakFallSpeed: 30, sensitivityDB: 0, releaseMs: 180, frameRate: nil)),
+        ThemePreset(id: "monoBreath", nameKey: "单色呼吸", subtitleKey: "极简安静", values: Values(barCount: 32, style: "solid", primaryColor: [0.65,0.78,1.0], gradientColors: [[0.65,0.78,1.0],[0.65,0.78,1.0]], gradientDirection: "horizontal", barOpacity: 0.48, gap: 5, cornerRadius: 7, roundBase: true, peakEnabled: false, peakStyle: "brick", peakThickness: 3, peakFallSpeed: 15, sensitivityDB: -2, releaseMs: 340, frameRate: nil)),
+        ThemePreset(id: "performance", nameKey: "性能优先", subtitleKey: "低资源", values: Values(barCount: 32, style: "solid", primaryColor: [0.38,0.87,1.0], gradientColors: [[0.38,0.87,1.0],[0.38,0.87,1.0]], gradientDirection: "horizontal", barOpacity: 0.74, gap: 3, cornerRadius: 2, roundBase: false, peakEnabled: false, peakStyle: "brick", peakThickness: 3, peakFallSpeed: 40, sensitivityDB: 0, releaseMs: 140, frameRate: 30))
+    ]
+
+    /// Resolve only current built-in identifiers; removed or external identifiers never become selectable themes.
+    static func find(_ id: String?) -> ThemePreset? { all.first { $0.id == id } }
+}
+
 /// Schema 1 stores appearance and logical-point geometry, never audio or permission state.
 struct Settings: Codable, Equatable {
     var schemaVersion = 1
@@ -27,6 +70,8 @@ struct Settings: Codable, Equatable {
     var showInDock = true
     var hasLaunched = false
     var spectrumEnabled = false
+    /// 2026-09-14: Persist provenance so a modified theme can be restored without storing user-created presets.
+    var themePresetID: String?
     var placementMode = "bottom"
     var x = 0.0
     var y = 0.0
@@ -73,6 +118,8 @@ struct Settings: Codable, Equatable {
         if !["top","bottom","left","right","free"].contains(s.placementMode) { s.placementMode = "bottom" }
         if !["up","down","left","right"].contains(s.growthDirection) { s.growthDirection = "up" }
         if !["solid","gradient","led"].contains(s.style) { s.style = "solid" }
+        // 2026-09-14: Clear obsolete preset provenance while retaining every independently stored visual value.
+        if ThemePreset.find(s.themePresetID) == nil { s.themePresetID = nil }
         s.x = x.isFinite ? x : 0; s.y = y.isFinite ? y : 0
         // 2026-09-11: Side docking uses height as the long axis and width as amplitude thickness.
         s.width = s.isVertical ? bound(width, 24, 240, 96) : bound(width, 0, 20000, 0)
@@ -90,6 +137,45 @@ struct Settings: Codable, Equatable {
         s.primaryColor = normalizedColor(primaryColor)
         s.gradientColors = gradientColors.count == 2 ? gradientColors.map(normalizedColor) : Settings().gradientColors
         return s
+    }
+
+    /// 2026-09-14: Copy only the fields owned by a theme, preserving placement, privacy and renderer preferences.
+    func applyingThemePreset(_ preset: ThemePreset) -> Settings {
+        var s = self
+        let v = preset.values
+        s.themePresetID = preset.id
+        s.barCount = v.barCount; s.style = v.style; s.primaryColor = v.primaryColor
+        s.gradientColors = v.gradientColors; s.gradientDirection = v.gradientDirection
+        s.barOpacity = v.barOpacity; s.gap = v.gap; s.cornerRadius = v.cornerRadius; s.roundBase = v.roundBase
+        s.peakEnabled = v.peakEnabled; s.peakStyle = v.peakStyle; s.peakThickness = v.peakThickness
+        // 2026-09-14: Built-in themes inherit their bar palette for peaks; prior custom peak colors must not leak across themes.
+        s.peakCustomColor = false; s.peakColor = [1, 1, 1]
+        s.peakFallSpeed = v.peakFallSpeed; s.sensitivityDB = v.sensitivityDB; s.releaseMs = v.releaseMs
+        if let frameRate = v.frameRate {
+            s.frameRate = frameRate; s.lastLimitedFrameRate = frameRate; s.customFrameRate = false
+        }
+        return s.validated()
+    }
+
+    /// 2026-09-14: Restore the selected built-in theme while retaining settings outside that theme's ownership.
+    func restoringThemePreset() -> Settings {
+        guard let preset = selectedThemePreset else { return self }
+        return applyingThemePreset(preset)
+    }
+
+    var selectedThemePreset: ThemePreset? { ThemePreset.find(themePresetID) }
+
+    /// Compare only theme-owned fields; unrelated settings never turn a visual preset into a custom theme.
+    var isThemePresetCustomized: Bool {
+        guard let preset = selectedThemePreset else { return false }
+        let v = preset.values
+        return barCount != v.barCount || style != v.style || primaryColor != v.primaryColor ||
+            gradientColors != v.gradientColors || gradientDirection != v.gradientDirection ||
+            barOpacity != v.barOpacity || gap != v.gap || cornerRadius != v.cornerRadius || roundBase != v.roundBase ||
+            peakEnabled != v.peakEnabled || peakStyle != v.peakStyle || peakThickness != v.peakThickness ||
+            peakCustomColor || peakColor != [1, 1, 1] ||
+            peakFallSpeed != v.peakFallSpeed || sensitivityDB != v.sensitivityDB || releaseMs != v.releaseMs ||
+            (v.frameRate.map { frameRate != $0 } ?? false)
     }
 
     /// 2026-09-11: Unlimited changes scheduling only and restores the last finite selection when disabled.

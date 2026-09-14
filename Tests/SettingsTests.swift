@@ -44,9 +44,59 @@ import CoreGraphics
         (try? Settings.decode(Data("{\"rendererBackend\":\"unknown\"}".utf8)).rendererBackend) == "coreAnimation"
     }
 
+    /// 2026-09-14: Applying a built-in theme changes only its declared visual fields and keeps user environment choices.
+    static func builtInThemePresets() throws {
+        assert(ThemePreset.all.count == 8)
+        assert(Set(ThemePreset.all.map(\.id)).count == ThemePreset.all.count)
+        assert(ThemePreset.all.allSatisfy { [16, 32, 64, 128].contains($0.values.barCount) })
+
+        var original = Settings()
+        original.placementMode = "left"; original.x = 321; original.y = -99
+        original.rendererBackend = "metal"; original.language = "en"
+        original.hideInScreenshots = true; original.showInDock = false
+        original.peakCustomColor = true; original.peakColor = [1, 0, 0]
+        let glacier = ThemePreset.all.first { $0.id == "glacierBlue" }!
+        let applied = original.applyingThemePreset(glacier)
+        assert(applied.themePresetID == glacier.id && !applied.isThemePresetCustomized)
+        assert(applied.style == "gradient" && applied.barCount == 64)
+        assert(!applied.peakCustomColor, "a preset must not retain an unrelated custom peak color")
+        assert(applied.placementMode == original.placementMode && applied.x == original.x && applied.y == original.y)
+        assert(applied.rendererBackend == "metal" && applied.language == "en")
+        assert(applied.hideInScreenshots && !applied.showInDock)
+
+        var customized = applied
+        customized.gap = 8
+        assert(customized.selectedThemePreset?.id == glacier.id && customized.isThemePresetCustomized)
+        customized.frameRate = 15
+        let restored = customized.restoringThemePreset()
+        assert(restored.themePresetID == glacier.id && !restored.isThemePresetCustomized)
+        assert(restored.gap == glacier.values.gap)
+        assert(restored.frameRate == 15, "restoring a visual theme must preserve unrelated animation settings")
+
+        let exactAgain = restored.applyingThemePreset(glacier)
+        assert(exactAgain == restored)
+
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let presetURL = folder.appendingPathComponent("settings.json")
+        let store = SettingsStore(url: presetURL)
+        store.value = customized
+        assert(store.saveNow())
+        let reloaded = SettingsStore(url: presetURL)
+        assert(reloaded.value.themePresetID == glacier.id && reloaded.value.isThemePresetCustomized)
+        let exported = try reloaded.exportData()
+        let imported = SettingsStore(url: folder.appendingPathComponent("imported.json"))
+        try imported.importData(exported)
+        assert(imported.value.themePresetID == glacier.id && imported.value.isThemePresetCustomized)
+        let unknown = try Settings.decode(Data("{\"themePresetID\":\"removed-theme\"}".utf8))
+        assert(unknown.themePresetID == nil && unknown.selectedThemePreset == nil)
+        print("PASS: built-in theme application, customization detection, restoration and environment preservation")
+    }
+
     /// Exercise missing fields, unknown keys, corruption, bounds, and a negative-coordinate screen.
     static func main() throws {
         try portableConfiguration()
+        try builtInThemePresets()
         // 2026-09-11: Pending choice persists while active backend remains fixed; reverting cancels restart.
         let restartURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathComponent("settings.json")
         defer { try? FileManager.default.removeItem(at: restartURL.deletingLastPathComponent()) }
