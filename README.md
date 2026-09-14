@@ -2,6 +2,10 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
+<p align="center">
+  <img src="Resources/Branding/v2/previews/yinqi-preview.svg.png" width="128" alt="音栖 Yinqi 应用图标">
+</p>
+
 让声音栖于桌面。轻量的原生 macOS 系统音频频谱工具。
 
 **最新稳定版：1.0.1 · build 32**
@@ -19,6 +23,18 @@
 - 菜单栏常驻，可选 Dock 显示；诊断仅在主动打开时运行。
 - 配置 JSON 导入与导出，方便备份和跨电脑分享。
 - 可选“屏幕截图时隐藏”，同时作用于频谱窗和编辑工具栏。
+
+## 界面预览
+
+| 桌面频谱效果 | 内置主题预设 |
+| --- | --- |
+| ![桌面频谱效果截图占位](docs/images/placeholder-desktop-spectrum.svg) | ![内置主题预设截图占位](docs/images/placeholder-theme-presets.svg) |
+| 待补充：`desktop-spectrum.png` | 待补充：`theme-presets.png` |
+
+| 外观二次调整 | 布局与编辑 |
+| --- | --- |
+| ![外观二次调整截图占位](docs/images/placeholder-appearance-controls.svg) | ![布局与编辑截图占位](docs/images/placeholder-layout-editing.svg) |
+| 待补充：`appearance-controls.png` | 待补充：`layout-editing.png` |
 
 ## 系统要求与安装
 

@@ -2,6 +2,10 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
+<p align="center">
+  <img src="Resources/Branding/v2/previews/yinqi-preview.svg.png" width="128" alt="Yinqi app icon">
+</p>
+
 Let sound settle on your desktop. Yinqi is a lightweight, native macOS system-audio spectrum overlay.
 
 **Latest stable release: 1.0.1 · build 32**
@@ -19,6 +23,18 @@ The `main` branch also contains eight unreleased built-in theme presets with pos
 - Menu bar operation with optional Dock visibility; diagnostics run only when explicitly opened.
 - JSON settings import and export for backup and transfer between Macs.
 - Optional screenshot exclusion for both the spectrum overlay and editing toolbar.
+
+## Preview
+
+| Desktop spectrum | Built-in theme presets |
+| --- | --- |
+| ![Desktop spectrum screenshot placeholder](docs/images/placeholder-desktop-spectrum.svg) | ![Built-in theme presets screenshot placeholder](docs/images/placeholder-theme-presets.svg) |
+| Pending: `desktop-spectrum.png` | Pending: `theme-presets.png` |
+
+| Appearance customization | Layout and editing |
+| --- | --- |
+| ![Appearance customization screenshot placeholder](docs/images/placeholder-appearance-controls.svg) | ![Layout and editing screenshot placeholder](docs/images/placeholder-layout-editing.svg) |
+| Pending: `appearance-controls.png` | Pending: `layout-editing.png` |
 
 ## Requirements and installation
 

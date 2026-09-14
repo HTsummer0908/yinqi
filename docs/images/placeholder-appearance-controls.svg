@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="750" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+  <title id="title">Appearance controls screenshot placeholder</title>
+  <desc id="desc">Placeholder for a future screenshot showing appearance customization controls.</desc>
+  <rect width="1200" height="750" rx="32" fill="#132136"/>
+  <rect x="48" y="48" width="1104" height="654" rx="22" fill="#1B2D46" stroke="#35516F" stroke-width="3" stroke-dasharray="14 12"/>
+  <g stroke-linecap="round">
+    <line x1="350" y1="280" x2="850" y2="280" stroke="#3F6286" stroke-width="18"/><line x1="350" y1="280" x2="635" y2="280" stroke="#49C7D3" stroke-width="18"/><circle cx="635" cy="280" r="27" fill="#EAF4FF"/>
+    <line x1="350" y1="380" x2="850" y2="380" stroke="#3F6286" stroke-width="18"/><line x1="350" y1="380" x2="535" y2="380" stroke="#4393F5" stroke-width="18"/><circle cx="535" cy="380" r="27" fill="#EAF4FF"/>
+    <line x1="350" y1="480" x2="850" y2="480" stroke="#3F6286" stroke-width="18"/><line x1="350" y1="480" x2="735" y2="480" stroke="#78C980" stroke-width="18"/><circle cx="735" cy="480" r="27" fill="#EAF4FF"/>
+  </g>
+  <text x="600" y="590" fill="#EAF4FF" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="34" font-weight="600" text-anchor="middle">Appearance Controls</text>
+  <text x="600" y="635" fill="#93AEC8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="24" text-anchor="middle">Screenshot placeholder · appearance-controls.png</text>
+</svg>

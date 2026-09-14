@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="750" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+  <title id="title">Layout and editing screenshot placeholder</title>
+  <desc id="desc">Placeholder for a future screenshot showing quick layouts and overlay editing.</desc>
+  <rect width="1200" height="750" rx="32" fill="#132136"/>
+  <rect x="48" y="48" width="1104" height="654" rx="22" fill="#1B2D46" stroke="#35516F" stroke-width="3" stroke-dasharray="14 12"/>
+  <rect x="330" y="230" width="540" height="310" rx="20" fill="#203753" stroke="#6385A7" stroke-width="4"/>
+  <rect x="350" y="468" width="500" height="52" rx="12" fill="#49C7D3" opacity="0.85"/>
+  <g fill="#EAF4FF">
+    <circle cx="330" cy="230" r="12"/><circle cx="600" cy="230" r="12"/><circle cx="870" cy="230" r="12"/>
+    <circle cx="330" cy="385" r="12"/><circle cx="870" cy="385" r="12"/>
+    <circle cx="330" cy="540" r="12"/><circle cx="600" cy="540" r="12"/><circle cx="870" cy="540" r="12"/>
+  </g>
+  <text x="600" y="610" fill="#EAF4FF" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="34" font-weight="600" text-anchor="middle">Layout &amp; Editing</text>
+  <text x="600" y="652" fill="#93AEC8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="24" text-anchor="middle">Screenshot placeholder · layout-editing.png</text>
+</svg>
