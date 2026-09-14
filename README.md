@@ -26,10 +26,10 @@
 
 ## 界面预览
 
-| 桌面频谱效果 | 内置主题预设 |
+| 桌面频谱效果 | 音乐播放效果 |
 | --- | --- |
-| ![桌面频谱效果截图占位](docs/images/placeholder-desktop-spectrum.svg) | ![内置主题预设截图占位](docs/images/placeholder-theme-presets.svg) |
-| 待补充：`desktop-spectrum.png` | 待补充：`theme-presets.png` |
+| ![音栖在 macOS 桌面底部显示频谱](docs/images/desktop-spectrum.jpg) | ![音栖配合音乐播放界面显示频谱](docs/images/music-playback.jpg) |
+| 在桌面底部保持透明悬浮 | 随系统播放音频实时响应 |
 
 | 外观二次调整 | 布局与编辑 |
 | --- | --- |

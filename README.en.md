@@ -26,10 +26,10 @@ The `main` branch also contains eight unreleased built-in theme presets with pos
 
 ## Preview
 
-| Desktop spectrum | Built-in theme presets |
+| Desktop spectrum | Music playback |
 | --- | --- |
-| ![Desktop spectrum screenshot placeholder](docs/images/placeholder-desktop-spectrum.svg) | ![Built-in theme presets screenshot placeholder](docs/images/placeholder-theme-presets.svg) |
-| Pending: `desktop-spectrum.png` | Pending: `theme-presets.png` |
+| ![Yinqi spectrum along the bottom of the macOS desktop](docs/images/desktop-spectrum.jpg) | ![Yinqi spectrum over a music playback interface](docs/images/music-playback.jpg) |
+| A transparent overlay along the desktop edge | Real-time response to system playback audio |
 
 | Appearance customization | Layout and editing |
 | --- | --- |
