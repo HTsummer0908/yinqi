@@ -11,5 +11,7 @@ xcrun swiftc -swift-version 5 Sources/Yinqi/Localization.swift Sources/Yinqi/Set
 build/SettingsTests
 # 2026-09-14: Guard the About card attribution, repository link, and confirmed license status.
 python3 Tests/AboutSectionTests.py
+# 2026-09-14: Keep the app bundle, product READMEs, and release notes on one published version.
+python3 Tests/ReleaseMetadataTests.py
 xcrun clang -std=c11 -Wall -Wextra -Wno-unused-parameter -fsanitize=thread -I Sources/Realtime/include Tests/RealtimeConcurrencyTests.c Sources/Realtime/Realtime.c -o build/RealtimeConcurrencyTests
 build/RealtimeConcurrencyTests

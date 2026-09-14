@@ -24,8 +24,8 @@ import Foundation
             }
             Localization.configure(language,bundle:bundle)
             precondition(L("语言")==translations["语言"])
-            let version = L("版本 %@ · 构建 %@","1.0.1","32")
-            precondition(version.contains("1.0.1") && version.contains("32") && !version.contains("%@"))
+            let version = L("版本 %@ · 构建 %@","1.1.0","33")
+            precondition(version.contains("1.1.0") && version.contains("33") && !version.contains("%@"))
             let info = try table(bundle,language,"InfoPlist")
             precondition(info["CFBundleDisplayName"] == (language == "zh-Hans" ? "音栖" : (language.hasPrefix("zh-") ? "音棲" : "Yinqi")))
             precondition(info["NSAudioCaptureUsageDescription"] == translations["只分析本机系统播放音频，不保存或上传声音。"])
