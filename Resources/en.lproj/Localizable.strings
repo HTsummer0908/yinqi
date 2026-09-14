@@ -198,6 +198,7 @@
 "顶部" = "Top";
 "顶部铺满" = "Fill top";
 "项目 GitHub" = "Project on GitHub";
+"本项目采用 Mozilla Public License 2.0。" = "This project is licensed under the Mozilla Public License 2.0.";
 "频率排列" = "Order";
 "频率范围" = "Frequency range";
 "频谱" = "Spectrum";

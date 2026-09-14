@@ -54,7 +54,7 @@ struct SettingsView: View {
         }.frame(minWidth: 681, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
     }
 
-    /// 2026-09-11: Show local bundle metadata and developer information without background network requests.
+    /// 2026-09-14: Keep authorship as compact metadata, expose only the project repository, and show the confirmed source license.
     @ViewBuilder private var aboutSection: some View {
         Section(L("关于音栖")) {
             HStack(spacing: 16) {
@@ -63,13 +63,17 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(L("音栖 Yinqi")).font(.title2).bold()
                     Text(L("让声音栖于桌面。轻量的 macOS 系统音频频谱工具。"))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Developed by HTsummer")
+                        Text("Built with GPT-6 Astra")
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                     Text(L("版本 %@ · 构建 %@", String(describing: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? L("未知")), String(describing: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? L("未知"))))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            LabeledContent(L("开发者"), value: "HTsummer0908")
-            Link(L("开发者 GitHub"), destination: URL(string: "https://github.com/HTsummer0908")!)
-            // 2026-09-11: Point to the release repository; private access follows GitHub account permissions.
+            // 2026-09-14: Direct users to the project rather than a personal profile.
             Link(L("项目 GitHub"), destination: URL(string: "https://github.com/HTsummer0908/yinqi")!)
         }
         Section(L("设置模式")) {
@@ -87,7 +91,7 @@ struct SettingsView: View {
         Section(L("隐私与项目状态")) {
             Text(L("音频仅在本机实时分析，不录制、不保存、不上传。仅持久化应用设置。"))
             Text(L("诊断按需开启；应用不会自动检查更新或发送遥测。"))
-            Text(L("开源许可证待确定；正式发布信息以项目 README 为准。"))
+            Text(L("本项目采用 Mozilla Public License 2.0。"))
                 .font(.caption).foregroundStyle(.secondary)
         }
     }

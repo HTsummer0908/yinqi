@@ -9,5 +9,7 @@ xcrun swiftc -swift-version 5 Sources/Yinqi/Localization.swift Sources/Yinqi/Set
 build/DSPTests
 xcrun swiftc -swift-version 5 Sources/Yinqi/Localization.swift Sources/Yinqi/Settings.swift Sources/Yinqi/SettingsStore.swift Tests/SettingsTests.swift -o build/SettingsTests
 build/SettingsTests
+# 2026-09-14: Guard the About card attribution, repository link, and confirmed license status.
+python3 Tests/AboutSectionTests.py
 xcrun clang -std=c11 -Wall -Wextra -Wno-unused-parameter -fsanitize=thread -I Sources/Realtime/include Tests/RealtimeConcurrencyTests.c Sources/Realtime/Realtime.c -o build/RealtimeConcurrencyTests
 build/RealtimeConcurrencyTests
