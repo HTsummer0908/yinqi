@@ -23,8 +23,7 @@
 ### 历史版本与二进制分发
 
 - 本说明适用于包含本文件的版本，不改写旧标签和既有 Release 附件。
-  `v1.0.1` 标签未包含 `LICENSE`；不能仅依据当前分支的声明，推定该标签已附带
-  相同授权。旧版本的授权范围应由权利人另行明确。
+  未附带许可声明的历史提交，不应仅依据当前分支的声明推定其授权范围。
 - 再分发 MPL 覆盖的软件时，应遵守 `LICENSE`；分发可执行文件时，应告知接收者
   如何获取对应的 MPL 源码。项目源码入口：
   <https://github.com/HTsummer0908/yinqi>。
@@ -57,10 +56,9 @@ its scope and does not add to or replace its terms.
 ### Historical versions and binary distribution
 
 - This document applies to versions containing it and does not rewrite older
-  tags or existing Release assets. The `v1.0.1` tag does not contain `LICENSE`;
-  the current branch's notice alone should not be treated as evidence that the
-  same license accompanied that tag. Licensing of historical versions requires
-  a separate clarification from the rights holder.
+  tags or existing Release assets. The current branch's notice alone should not
+  be treated as evidence of the licensing scope of historical commits that did
+  not include a license notice.
 - Redistribution of MPL-covered software must follow `LICENSE`. Distributors
   of executables must inform recipients how to obtain the corresponding
   MPL-covered source. The project's source repository is
