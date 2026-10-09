@@ -60,3 +60,4 @@ open build/Yinqi.app
 - [1.1.0 发布说明](docs/releases/1.1.0.md)
 - [测试记录](docs/testing) · [性能记录](docs/performance)
 - [Mozilla Public License 2.0](LICENSE)
+- [授权范围与第三方素材说明](LICENSING.md)

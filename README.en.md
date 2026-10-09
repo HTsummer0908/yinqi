@@ -60,3 +60,4 @@ If Xcode is not in a standard location, set `ICON_DEVELOPER_DIR` to its `Content
 - [1.1.0 release notes](docs/releases/1.1.0.md)
 - [Test records](docs/testing) · [Performance records](docs/performance)
 - [Mozilla Public License 2.0](LICENSE)
+- [Licensing scope and third-party content](LICENSING.md)
