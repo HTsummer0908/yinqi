@@ -3,7 +3,7 @@
 [简体中文](README.md) | [English](README.en.md)
 
 <p align="center">
-  <img src="Resources/Branding/v2/previews/yinqi-preview.svg.png" width="128" alt="Yinqi app icon">
+  <img src="Resources/Branding/v2/previews/yinqi-app-icon.png" width="128" alt="Yinqi app icon">
 </p>
 
 <p align="center"><strong>Let sound settle on your desktop.</strong></p>

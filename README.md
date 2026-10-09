@@ -3,7 +3,7 @@
 [简体中文](README.md) | [English](README.en.md)
 
 <p align="center">
-  <img src="Resources/Branding/v2/previews/yinqi-preview.svg.png" width="128" alt="音栖 Yinqi 应用图标">
+  <img src="Resources/Branding/v2/previews/yinqi-app-icon.png" width="128" alt="音栖 Yinqi 应用图标">
 </p>
 
 <p align="center"><strong>让声音栖于桌面。</strong></p>

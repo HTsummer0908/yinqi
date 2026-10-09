@@ -13,3 +13,12 @@
 ## 0.3.6 色调背景修订
 
 2026-09-11：移除参与前景合成的整幅背景 SVG 组，改用 Icon Composer 根级 automatic-gradient 填充，避免背景图层干预系统单色/色调处理。默认保留深蓝色，渐变由系统生成；频谱和基线仍为独立矢量组。已查看默认与 Mono 预览，实际 Dock 色调效果待复验。
+
+## README 正式图标
+
+2026-10-09：中英文 README 改用 `previews/yinqi-app-icon.png`，替换带白色底的早期预览图。
+该 PNG 从应用构建产物 `build/Yinqi.app/Contents/Resources/Yinqi.icns` 提取，保留正式图标外观和透明背景；
+资源分辨率为 256×256，README 按 128px 显示。
+
+更新时先运行 `bash scripts/build.sh`，再用 `iconutil --convert iconset` 将生成的 `Yinqi.icns`
+导出到临时 `.iconset` 目录，使用其中的 `icon_128x128@2x.png` 替换该 PNG。
