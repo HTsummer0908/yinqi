@@ -16,7 +16,8 @@ mkdir -p build/Yinqi.app/Contents/Resources
 # ICON_DEVELOPER_DIR selects only the resource compiler, preserving the app compiler selection.
 icon_developer_dir="${ICON_DEVELOPER_DIR:-${DEVELOPER_DIR:-$(xcode-select -p)}}"
 if ! DEVELOPER_DIR="$icon_developer_dir" xcrun --find actool >/dev/null 2>&1; then
-    for candidate in /Applications/Xcode.app/Contents/Developer /Applications/Xcode-beta.app/Contents/Developer /Volumes/Data/Applications/Xcode-beta.app/Contents/Developer; do
+    # 2026-10-09: Search standard installations only; custom volumes use ICON_DEVELOPER_DIR.
+    for candidate in /Applications/Xcode.app/Contents/Developer /Applications/Xcode-beta.app/Contents/Developer; do
         if [ -x "$candidate/usr/bin/actool" ]; then icon_developer_dir="$candidate"; break; fi
     done
 fi
