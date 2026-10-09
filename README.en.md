@@ -29,11 +29,6 @@ Yinqi analyzes the audio playing on your Mac and renders a customizable transpar
 | ![Yinqi spectrum along the bottom of the macOS desktop](docs/images/desktop-spectrum.jpg) | ![Yinqi spectrum over a music playback interface](docs/images/music-playback.jpg) |
 | A transparent overlay along the desktop edge | Real-time response to system playback audio |
 
-| Appearance customization | Layout and editing |
-| --- | --- |
-| ![Appearance customization screenshot placeholder](docs/images/placeholder-appearance-controls.svg) | ![Layout and editing screenshot placeholder](docs/images/placeholder-layout-editing.svg) |
-| Screenshot pending | Screenshot pending |
-
 ## Download and use
 
 Download `Yinqi-1.1.1-arm64.zip` from [GitHub Releases](https://github.com/HTsummer0908/yinqi/releases/latest), extract it, and move `Yinqi.app` to Applications.

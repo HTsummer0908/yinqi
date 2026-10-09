@@ -29,11 +29,6 @@
 | ![音栖在 macOS 桌面底部显示频谱](docs/images/desktop-spectrum.jpg) | ![音栖配合音乐播放界面显示频谱](docs/images/music-playback.jpg) |
 | 在桌面底部保持透明悬浮 | 随系统播放音频实时响应 |
 
-| 外观二次调整 | 布局与编辑 |
-| --- | --- |
-| ![外观二次调整截图占位](docs/images/placeholder-appearance-controls.svg) | ![布局与编辑截图占位](docs/images/placeholder-layout-editing.svg) |
-| 截图待补充 | 截图待补充 |
-
 ## 下载与使用
 
 从 [GitHub Releases](https://github.com/HTsummer0908/yinqi/releases/latest) 下载 `Yinqi-1.1.1-arm64.zip`，解压后将 `Yinqi.app` 放入“应用程序”。
