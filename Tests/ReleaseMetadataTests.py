@@ -10,8 +10,8 @@ import plistlib
 from pathlib import Path
 
 
-version = "1.1.0"
-build = "33"
+version = "1.1.1"
+build = "34"
 info = plistlib.loads(Path("Resources/Info.plist").read_bytes())
 
 assert info["CFBundleShortVersionString"] == version

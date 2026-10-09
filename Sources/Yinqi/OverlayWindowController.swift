@@ -25,6 +25,8 @@ final class OverlayWindowController {
     private var settings = Settings()
     var editing = false {
         didSet {
+            // 2026-10-09: Nonactivating panels must explicitly opt into mouse-moved delivery during editing.
+            panel.acceptsMouseMovedEvents = editing
             panel.ignoresMouseEvents = !editing; surface.editing = editing; surface.needsDisplay = true
             updateToolbar()
         }
@@ -119,8 +121,48 @@ final class OverlayWindowController {
 
 /// Hit-test surface accepts mouse gestures only in editing mode; locked clicks pass at NSPanel level.
 private final class EditingSurface: NSView {
-    /// 2026-09-11: Rebuild cursor regions whenever editing is toggled.
-    var editing = false { didSet { window?.invalidateCursorRects(for: self) } }
+    /// 2026-10-09: Keep visible resize affordances independent of foreground cursor ownership.
+    var editing = false {
+        didSet {
+            hoveredEdges = 0
+            updateTrackingAreas()
+            window?.invalidateCursorRects(for: self)
+            updateResizeHandles()
+        }
+    }
+    private var hoveredEdges = 0
+    private var resizeHandles: [CALayer] = []
+
+    /// 2026-10-09: Draw handles above both renderer backends without activating the app or intercepting input.
+    private func updateResizeHandles() {
+        guard let layer else { return }
+        let masks = [1, 2, 4, 8, 5, 6, 9, 10]
+        if resizeHandles.isEmpty {
+            for mask in masks {
+                let handle = CALayer()
+                handle.name = "resize-handle-\(mask)"
+                handle.zPosition = 100
+                handle.cornerRadius = 2
+                handle.borderWidth = 1
+                handle.borderColor = NSColor.black.withAlphaComponent(0.8).cgColor
+                layer.addSublayer(handle)
+                resizeHandles.append(handle)
+            }
+        }
+        let w = bounds.width, h = bounds.height
+        let centers = [NSPoint(x: 4, y: h/2), NSPoint(x: w-4, y: h/2),
+                       NSPoint(x: w/2, y: 4), NSPoint(x: w/2, y: h-4),
+                       NSPoint(x: 4, y: 4), NSPoint(x: w-4, y: 4),
+                       NSPoint(x: 4, y: h-4), NSPoint(x: w-4, y: h-4)]
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for (index, handle) in resizeHandles.enumerated() {
+            handle.isHidden = !editing
+            handle.frame = CGRect(x: centers[index].x-3.5, y: centers[index].y-3.5, width: 7, height: 7)
+            handle.backgroundColor = (hoveredEdges == masks[index] ? NSColor.white : NSColor.systemCyan).cgColor
+        }
+        CATransaction.commit()
+    }
     var vertical = false
     var onMove: (() -> Void)?
     var onEnd: ((NSRect) -> Void)?
@@ -130,6 +172,55 @@ private final class EditingSurface: NSView {
 
     /// Route editor gestures to the parent rather than the Metal child view.
     override func hitTest(_ point: NSPoint) -> NSView? { editing ? self : nil }
+
+    private var editorTracking: NSTrackingArea?
+
+    /// 2026-10-09: Track entry/movement even when inactive; AppKit suppresses cursorUpdate with activeAlways.
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let editorTracking { removeTrackingArea(editorTracking) }
+        editorTracking = nil
+        guard editing else { return }
+        let area = NSTrackingArea(rect: .zero, options: [.activeAlways, .inVisibleRect, .mouseMoved, .mouseEnteredAndExited], owner: self)
+        addTrackingArea(area)
+        editorTracking = area
+    }
+
+    /// 2026-10-09: Use the same eight-point edge zones as dragging, including diagonal corners.
+    private func updateEditorCursor(_ event: NSEvent) {
+        guard editing else { return }
+        let p = convert(event.locationInWindow, from: nil)
+        let left = p.x < 8, right = p.x > bounds.width - 8
+        let bottom = p.y < 8, top = p.y > bounds.height - 8
+        let position: NSCursor.FrameResizePosition?
+        if left && bottom { position = .bottomLeft }
+        else if right && bottom { position = .bottomRight }
+        else if left && top { position = .topLeft }
+        else if right && top { position = .topRight }
+        else if left { position = .left }
+        else if right { position = .right }
+        else if bottom { position = .bottom }
+        else if top { position = .top }
+        else { position = nil }
+        if let position { NSCursor.frameResize(position: position, directions: .all).set() }
+        else { NSCursor.openHand.set() }
+        let nextEdges = (left ? 1 : 0) | (right ? 2 : 0) | (bottom ? 4 : 0) | (top ? 8 : 0)
+        if hoveredEdges != nextEdges {
+            hoveredEdges = nextEdges
+            updateResizeHandles()
+        }
+    }
+
+    /// 2026-10-09: Refresh the cursor as the pointer crosses internal edge and corner zones.
+    override func mouseMoved(with event: NSEvent) { updateEditorCursor(event) }
+    /// 2026-10-09: Display feedback immediately when entering the editing surface.
+    override func mouseEntered(with event: NSEvent) { updateEditorCursor(event) }
+    /// 2026-10-09: Release the editing cursor when leaving the overlay.
+    override func mouseExited(with event: NSEvent) {
+        hoveredEdges = 0
+        updateResizeHandles()
+        NSCursor.arrow.set()
+    }
 
     /// 2026-09-11: Match resize cursors to the existing 8 pt drag zones, with nonoverlapping corner regions.
     override func resetCursorRects() {
@@ -156,6 +247,7 @@ private final class EditingSurface: NSView {
     /// 2026-09-11: Keep cursor regions attached to current edges after resizing or applying quick layouts.
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
+        updateResizeHandles()
         window?.invalidateCursorRects(for: self)
     }
 
@@ -178,13 +270,16 @@ private final class EditingSurface: NSView {
         else {
             if edges & 1 != 0 { frame.size.width = max(vertical ? 24 : 240, startFrame.width-dx); frame.origin.x = startFrame.maxX-frame.width }
             if edges & 2 != 0 { frame.size.width = max(vertical ? 24 : 240, startFrame.width+dx) }
-            if edges & 4 != 0 { frame.size.height = vertical ? max(240,startFrame.height-dy) : min(240,max(24,startFrame.height-dy)); frame.origin.y = startFrame.maxY-frame.height }
-            if edges & 8 != 0 { frame.size.height = vertical ? max(240,startFrame.height+dy) : min(240,max(24,startFrame.height+dy)) }
+            if edges & 4 != 0 { frame.size.height = max(vertical ? 240 : 24, startFrame.height-dy); frame.origin.y = startFrame.maxY-frame.height }
+            if edges & 8 != 0 { frame.size.height = max(vertical ? 240 : 24, startFrame.height+dy) }
         }
-        if vertical {
-            let right = frame.maxX
-            frame.size.width = min(240, frame.width)
-            if edges & 1 != 0 { frame.origin.x = right-frame.width }
+        // 2026-10-09: Replace the fixed 240-point thickness cap with the current usable screen bounds.
+        if edges != 0, let safe = window.screen?.visibleFrame {
+            let right = frame.maxX, top = frame.maxY
+            frame.size.width = min(frame.width, safe.width)
+            frame.size.height = min(frame.height, safe.height)
+            if edges & 1 != 0 { frame.origin.x = right - frame.width }
+            if edges & 4 != 0 { frame.origin.y = top - frame.height }
         }
         window.setFrame(frame,display:true)
         updateDrawable(); needsDisplay = true; onMove?()

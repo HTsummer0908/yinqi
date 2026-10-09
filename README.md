@@ -9,7 +9,7 @@
 <p align="center"><strong>让声音栖于桌面。</strong></p>
 <p align="center">轻量、原生的 macOS 系统音频频谱悬浮工具。</p>
 
-**最新版本：[1.1.0 · build 33](https://github.com/HTsummer0908/yinqi/releases/tag/v1.1.0)**
+**最新版本：[1.1.1 · build 34](https://github.com/HTsummer0908/yinqi/releases/tag/v1.1.1)**
 
 音栖实时分析 Mac 正在播放的系统音频，在桌面边缘呈现可定制的透明频谱。音频只在本机处理，不录制、不保存、不上传。
 
@@ -36,7 +36,7 @@
 
 ## 下载与使用
 
-从 [GitHub Releases](https://github.com/HTsummer0908/yinqi/releases/latest) 下载 `Yinqi-1.1.0-arm64.zip`，解压后将 `Yinqi.app` 放入“应用程序”。
+从 [GitHub Releases](https://github.com/HTsummer0908/yinqi/releases/latest) 下载 `Yinqi-1.1.1-arm64.zip`，解压后将 `Yinqi.app` 放入“应用程序”。
 
 - 系统要求：**macOS 26.0+**、**Apple Silicon（arm64）**。
 - 首次使用时，在设置中开启频谱，并按 macOS 提示允许系统音频访问。
@@ -57,7 +57,7 @@ open build/Yinqi.app
 ## 更多资料
 
 - [开发文档](docs/DEVELOPMENT.md) · [Development guide](docs/DEVELOPMENT.en.md)
-- [1.1.0 发布说明](docs/releases/1.1.0.md)
+- [1.1.1 发布说明](docs/releases/1.1.1.md)
 - [测试记录](docs/testing) · [性能记录](docs/performance)
 - [Mozilla Public License 2.0](LICENSE)
 - [授权范围与第三方素材说明](LICENSING.md)

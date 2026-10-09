@@ -9,7 +9,7 @@
 <p align="center"><strong>Let sound settle on your desktop.</strong></p>
 <p align="center">A lightweight, native macOS system-audio spectrum overlay.</p>
 
-**Latest release: [1.1.0 · build 33](https://github.com/HTsummer0908/yinqi/releases/tag/v1.1.0)**
+**Latest release: [1.1.1 · build 34](https://github.com/HTsummer0908/yinqi/releases/tag/v1.1.1)**
 
 Yinqi analyzes the audio playing on your Mac and renders a customizable transparent spectrum along a desktop edge. Audio is processed locally and is never recorded, stored, or uploaded.
 
@@ -36,7 +36,7 @@ Yinqi analyzes the audio playing on your Mac and renders a customizable transpar
 
 ## Download and use
 
-Download `Yinqi-1.1.0-arm64.zip` from [GitHub Releases](https://github.com/HTsummer0908/yinqi/releases/latest), extract it, and move `Yinqi.app` to Applications.
+Download `Yinqi-1.1.1-arm64.zip` from [GitHub Releases](https://github.com/HTsummer0908/yinqi/releases/latest), extract it, and move `Yinqi.app` to Applications.
 
 - Requirements: **macOS 26.0 or later** and **Apple Silicon (arm64)**.
 - On first use, enable the spectrum in Settings and grant system-audio access when macOS asks.
@@ -57,7 +57,7 @@ If Xcode is not in a standard location, set `ICON_DEVELOPER_DIR` to its `Content
 ## More information
 
 - [Development guide](docs/DEVELOPMENT.en.md) · [中文开发文档](docs/DEVELOPMENT.md)
-- [1.1.0 release notes](docs/releases/1.1.0.md)
+- [1.1.1 release notes](docs/releases/1.1.1.md)
 - [Test records](docs/testing) · [Performance records](docs/performance)
 - [Mozilla Public License 2.0](LICENSE)
 - [Licensing scope and third-party content](LICENSING.md)

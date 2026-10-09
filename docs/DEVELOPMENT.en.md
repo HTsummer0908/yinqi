@@ -93,7 +93,7 @@ Yinqi is licensed under the [Mozilla Public License 2.0](../LICENSE). Any summar
 
 ## Release references
 
-- Current release notes: [`docs/releases/1.1.0.md`](releases/1.1.0.md)
+- Current release notes: [`docs/releases/1.1.1.md`](releases/1.1.1.md)
 - Historical release notes: [`docs/releases`](releases)
 - Theme preset design: [`docs/design/settings-presets.md`](design/settings-presets.md)
 - Architecture record: [`2026-09-11-macos-spectrum-functional-architecture.md`](../2026-09-11-macos-spectrum-functional-architecture.md)

@@ -126,9 +126,9 @@ struct Settings: Codable, Equatable {
         // 2026-09-14: Clear obsolete preset provenance while retaining every independently stored visual value.
         if ThemePreset.find(s.themePresetID) == nil { s.themePresetID = nil }
         s.x = x.isFinite ? x : 0; s.y = y.isFinite ? y : 0
-        // 2026-09-11: Side docking uses height as the long axis and width as amplitude thickness.
-        s.width = s.isVertical ? bound(width, 24, 240, 96) : bound(width, 0, 20000, 0)
-        s.height = s.isVertical ? bound(height, 0, 20000, 0) : bound(height, 24, 240, 96)
+        // 2026-10-09: Preserve screen-sized thickness after dragging/import; restoredFrame clamps to the actual screen.
+        s.width = s.isVertical ? bound(width, 24, 20000, 96) : bound(width, 0, 20000, 0)
+        s.height = s.isVertical ? bound(height, 0, 20000, 0) : bound(height, 24, 20000, 96)
         s.edgeInset = bound(edgeInset, 0, 120, 8)
         s.gap = bound(gap, 0, 8, 2); s.cornerRadius = bound(cornerRadius, 0, 8, 2)
         s.barOpacity = bound(barOpacity, 0.1, 1, 0.7)

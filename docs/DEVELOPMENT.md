@@ -93,7 +93,7 @@ bash scripts/test-termination.sh
 
 ## 发布资料
 
-- 当前发布说明：[`docs/releases/1.1.0.md`](releases/1.1.0.md)
+- 当前发布说明：[`docs/releases/1.1.1.md`](releases/1.1.1.md)
 - 历史发布说明：[`docs/releases`](releases)
 - 设置预设设计：[`docs/design/settings-presets.md`](design/settings-presets.md)
 - 功能架构记录：[`2026-09-11-macos-spectrum-functional-architecture.md`](../2026-09-11-macos-spectrum-functional-architecture.md)
